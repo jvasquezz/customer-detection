@@ -42,6 +42,9 @@ int main(int argc, const char * argv[]) {
         /* difference of two images over a Rect mold showing pixels with < 60 RGB values */
         Mat cline = (baseframe - aframe)(mold) < 60;
         
+        /* grabCut(InputArray img, InputOutputArray mask, Rect rect, InputOutputArray bgdModel, InputOutputArray fgdModel, int iterCount, int mode=GC_EVAL ) */
+        
+        
         /* floodFill(InputOutputArray image, Point seedPoint, Scalar newVal, Rect* rect=0, Scalar loDiff=Scalar(), Scalar upDiff=Scalar(), int flags=4 ) */
 //        uchar fillValue = 128;
 //        floodFill(cline, Point(200,0), WHITE, (Rect*)0, Scalar(), 8 | FLOODFILL_MASK_ONLY | (fillValue << 8) );
