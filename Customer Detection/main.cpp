@@ -8,17 +8,169 @@
 //  Copyright © 2015 Rurouni. All rights reserved.
 //
 
+Mat img;
+Mat templ;
+Mat result;
+
+
 int main(int argc, const char * argv[]) {
+//    int x = 1;
+    baseframe = imread(BASEFRAME_DIR);
+
+    Mat Tmage = imread("/Users/drifter/Desktop/wt2.png");
     
-    // insert code here...
-//    Mat aframe, bframe;
-//    aframe = imread("/Users/drifter/Dropbox/Feloh/inonsho.png", CV_LOAD_IMAGE_COLOR);
-//    aframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/frame.png", CV_LOAD_IMAGE_COLOR);
-//    bframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/1frame.png", CV_LOAD_IMAGE_COLOR);
-    aframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/frame.png");
-    bframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/baseframe.png");
+    capture.open(VIDEOPATH);
+
+    /* constructor for resize: resize(InputArray src, OutputArray dst, Size dsize) */
+    Size size(baseframe.cols,baseframe.rows);
+
+	/* mold: A hollow form or matrix for shaping a single line from the video. */
+    /* constructor for Rect: Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height); */
+    Rect mold(0,baseframe.rows/4,baseframe.cols,baseframe.rows/2);
+
+    while (1) {
+        //store image to matrix
+        capture >> aframe;
+        /* constructor for resize: resize(InputArray src, OutputArray dst, Size dsize) */
+        resize(aframe, aframe, size);
+
+        double alpha = 2.5; double beta; //double input;
+        
+        beta = ( 1.0 - alpha );
+        addWeighted( aframe, alpha, baseframe, beta, 0.0, dst);
+
+        /* difference of two images over a Rect mold showing pixels with < 60 RGB values */
+        Mat cline = (baseframe - aframe)(mold) < 60;
+        
+        /* floodFill(InputOutputArray image, Point seedPoint, Scalar newVal, Rect* rect=0, Scalar loDiff=Scalar(), Scalar upDiff=Scalar(), int flags=4 ) */
+//        uchar fillValue = 128;
+//        floodFill(cline, Point(200,0), WHITE, (Rect*)0, Scalar(), 8 | FLOODFILL_MASK_ONLY | (fillValue << 8) );
+//        floodFill(aframe, Point(0,0), Scalar(200), (Rect*)0, Scalar(), 8 | FLOODFILL_MASK_ONLY);
+        
+        /* matchTemplate(InputArray image, InputArray templ, OutputArray result, int method) */
+        matchTemplate(aframe, Tmage, result, CV_TM_CCOEFF_NORMED);
+        normalize( result, result, 0, 1, NORM_MINMAX, -1, Mat() );
+        
+        Mat addingI =  baseframe + aframe;
+        Mat contrast_brightness;
+        
+//        Mat contrast_brightness = 2*aframe - 2*100;
+////        imshow("contrast_brightness", contrast_brightness);
+//        
+//        contrast_brightness = 3*aframe - 2*100;
+//        imshow("contrast_brightness 3c", contrast_brightness);
+
+//        Mat image;
+//        GaussianBlur(aframe, image, Size(0,0), 1, 1.5);
+//        addWeighted(aframe, alpha, image, beta, 0.0, image);
+        
+//        aframe = image;
+
+//        contrast_brightness = 4.2*aframe - 2*100;
+//        Mat contrasted_baseframe = 4.2*baseframe - 2*100;
+//        
+//        imshow("contrast_brightness 4c", contrast_brightness);
+//        imshow("Contrasted baseframe 4c", contrasted_baseframe);
+//        
+//        
+//        Mat diffX =contrasted_baseframe - contrast_brightness;
+        
+        
+//        cvtColor( diffX, diffX, COLOR_BGR2GRAY );
+
+//        diffX = diffX > 240;
+//        imshow("diff contrasted vs base contrasted", diffX);
+        
+//        imshow("aframe + baseframe", addingI);
+//        Mat subsI = baseframe = aframe;
+//        imshow("aframe - baseframe", subsI);
+//
+////        result = result  > 50;
+////        Mat m1 = result;
+////        Mat m2 = result;
+////        
+////        imshow("result",result);
+//////        resize(m1, m1, size);
+//////        resize(result,result,size);
+////        
+////        m1 = result - m1;
+////        m2 = m2 - result;
+////        imshow("m1", m1);
+////        imshow("m2", m2);
+//        
+////        imshow("template match", result);
+//
+        img = aframe;
+        templ = Tmage;
+        /// Create Trackbar
+        char* trackbar_label = "Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED";
+        createTrackbar( trackbar_label, image_window, &match_method, max_Trackbar, MatchingMethod );
+        
+        MatchingMethod( 0, 0 );
+        
+        waitKey(1);
+        int x = 1;
+        if(x == 1)
+            continue;
+//
+//        Mat dist;
+//        cvtColor( aframe, dist, COLOR_BGR2GRAY );
+//        imshow("dist with 0", dist);
+//        
+//
+//        
+//        waitKey(1);
+//        
+////        Mat I = dist;
+////        Mat padded;                            //expand input image to optimal size
+////        int m = getOptimalDFTSize( I.rows );
+////        int n = getOptimalDFTSize( I.cols ); // on the border add zero values
+////        copyMakeBorder(I, padded, 0, m - I.rows, 0, n - I.cols, BORDER_CONSTANT, Scalar::all(0));
+////        
+////        Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F)};
+////        Mat complexI;
+////        merge(planes, 2, complexI);         // Add to the expanded another plane with zeros
+////
+////        dft(complexI, complexI);            // this way the result may fit in the source matrix
+//
+////dft(dist, tmp);
+////        imshow("fourier", complexI);
+//
+//
+        
+        alpha = 0.5; //double input;
+        
+        beta = ( 1.0 - alpha );
+        addWeighted( aframe, alpha, baseframe, beta, 0.0, dst);
+//        imshow("originals blended", dst);
+        Rect customerline(0,dst.rows/4,dst.cols,dst.rows/2);
+        cline = dst(customerline);
+        imshow("Blended", cline);
+        
+////        Canny(dist, dist, 0, 5);
+//        Mat image;
+//        GaussianBlur(dist, image, Size(0,0), 1, 1.5);
+//        addWeighted(dist, alpha, image, beta, 0.0, image);
+//
+//        imshow("sharpened", image);
+//        imshow("dist", dist);
+//        distanceTransform(dist, dist, CV_DIST_L2, 3);
+//
+//        imshow("non-normalized", dist);
+//        normalize(dist, dist, 0.0, 1.0, NORM_MINMAX);
+//        imshow("normalized", dist);
+//        
+//        imshow("aframe", aframe);
+//        imshow("cline", cline);
+        
+//        imshow("diff", dst );
+        char key = waitKey(1); // waits to display frame
+        if (key == 'q') {
+            break;
+        }
+    }
     
-//    bframe = bframe > 150;
+//    baseframe = baseframe > 150;
 //    cvtColor( aframe, aframe, COLOR_BGR2GRAY );
 //    GaussianBlur(aframe, aframe, Size(7,7), 1.5, 1.5);
 //    Canny(aframe, aframe, 0, 15, 3);
@@ -26,28 +178,28 @@ int main(int argc, const char * argv[]) {
 //    findContours(aframe,contours,hierarchy,RETR_TREE,CHAIN_APPROX_SIMPLE, Point(0,0));
 
     /* constructor for Rect: Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height); */
-    Rect line(0,bframe.rows/4,bframe.cols,bframe.rows/2);
-//    Rect bline(0,bframe.rows/4,bframe.cols,bframe.rows/2);
+//    Rect line(0,baseframe.rows/4,baseframe.cols,baseframe.rows/2);
+//    Rect bline(0,baseframe.rows/4,baseframe.cols,baseframe.rows/2);
     
 //    Mat afr = aframe(aline);
-//    Mat bfr = bframe(bline);
+//    Mat bfr = baseframe(bline);
     
 //    imshow("afr", afr);
 //    imshow("bfr", bfr);
     
-    double alpha = 0.5; double beta; //double input;
+//    double alpha = 0.5; double beta; //double input;
     
     beta = ( 1.0 - alpha );
-    addWeighted( aframe, alpha, bframe, beta, 0.0, dst);
+    addWeighted( aframe, alpha, baseframe, beta, 0.0, dst);
 //    imshow("originals blended", dst);
     Rect customerline(0,dst.rows/4,dst.cols,dst.rows/2);
-    Mat cline = dst(customerline);
-    imshow("Blended", cline);
+//    Mat cline = dst(customerline);
+//    imshow("Blended", cline);
     
 //    aframe = aframe > 50;
-//    bframe = bframe > 50;
+//    baseframe = baseframe > 50;
 //    cvtColor( aframe, aframe, COLOR_BGR2 GRAY );
-//    cvtColor( bframe, bframe, COLOR_BGR2GRAY );
+//    cvtColor( baseframe, baseframe, COLOR_BGR2GRAY );
     srcCanny = aframe;
     cvtColor( srcCanny, src_gray, COLOR_BGR2GRAY );
     namedWindow( window_name, CV_WINDOW_AUTOSIZE );
@@ -56,10 +208,9 @@ int main(int argc, const char * argv[]) {
     
     /// Show the image
     CannyThreshold(0, 0);
-
     
 //    GaussianBlur(aframe, aframe, Size(7,7), 100.5, 1.5);
-//    GaussianBlur(bframe, bframe, Size(7,7), 1.5, 1.5);
+//    GaussianBlur(baseframe, baseframe, Size(7,7), 1.5, 1.5);
 //    namedWindow("gaussian blur", CV_WINDOW_AUTOSIZE);
 //    int slider = 0;
 //    createTrackbar("gaussian blur %", "blurs", &slider, 100, blur_func);
@@ -69,10 +220,10 @@ int main(int argc, const char * argv[]) {
     imshow("only canny", aframe);
     waitKey(0);
     
-//    bframe = bframe < 01;
-    Mat diff = bframe - aframe;
-    Mat diff2 = aframe - bframe;
-    Mat diff3 = bframe - dst;
+//    baseframe = baseframe < 01;
+    Mat diff = baseframe - aframe;
+    Mat diff2 = aframe - baseframe;
+    Mat diff3 = baseframe - dst;
     Mat diff4 = dst - aframe;
     
 //    GaussianBlur(diff, diff, Size(7,7), 1.5, 1.5);
@@ -168,6 +319,47 @@ int main(int argc, const char * argv[]) {
 }
 
 /**
+ * @function MatchingMethod
+ * @brief Trackbar callback
+ */
+void MatchingMethod( int, void* )
+{
+    /// Source image to display
+    Mat img_display;
+    img.copyTo( img_display );
+    
+    /// Create the result matrix
+    int result_cols =  img.cols - templ.cols + 1;
+    int result_rows = img.rows - templ.rows + 1;
+    
+    result.create( result_rows, result_cols, CV_32FC1 );
+    
+    /// Do the Matching and Normalize
+    matchTemplate( img, templ, result, match_method );
+    normalize( result, result, 0, 1, NORM_MINMAX, -1, Mat() );
+    
+    /// Localizing the best match with minMaxLoc
+    double minVal; double maxVal; Point minLoc; Point maxLoc;
+    Point matchLoc;
+    
+    minMaxLoc( result, &minVal, &maxVal, &minLoc, &maxLoc, Mat() );
+    
+    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+    if( match_method  == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED )
+    { matchLoc = minLoc; }
+    else
+    { matchLoc = maxLoc; }
+    
+    /// Show me what you got
+    rectangle( img_display, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
+    rectangle( result, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
+    
+    imshow( image_window, img_display );
+    imshow( result_window, result );
+    
+}
+
+/**
  * @function CannyThreshold
  * @brief Trackbar callback - Canny thresholds input with a ratio 1:3
  */
@@ -194,7 +386,7 @@ void on_trackbar( int, void* )
 {
     alpha = (double) alpha_slider/alpha_slider_max ;
     beta = ( 1.0 - alpha );
-    src1 = bframe;
+    src1 = baseframe;
     src2 = aframe;
     addWeighted( src1, alpha, src2, beta, 0.0, dstslider);
     
