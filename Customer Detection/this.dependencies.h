@@ -1,6 +1,9 @@
 /* Global variables */
 Mat src, erosion_dst, dilation_dst;
 Mat cframe, dst;
+Mat img;
+Mat templ;
+Mat result;
 
 Size size(720,720);//the dst image size,e.g.100x100
 
@@ -88,5 +91,5 @@ char window_name[20] = "Edge Map";
 
 int match_method;
 int max_Trackbar = 5;
-char* image_window = "Source Image";
-char* result_window = "Result window";
+char image_window[30] = "Source Image";
+char result_window[30] = "Result window";
