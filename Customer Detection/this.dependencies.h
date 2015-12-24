@@ -8,6 +8,14 @@ Mat diff;
 #include <stdio.h>
 #include <iostream>
 
+Scalar color = Scalar(0,255,255);
+Scalar yellow = Scalar(0,255,255);
+Scalar green = Scalar(0,255,0);
+Scalar red = Scalar(0,0,255);
+Scalar blue = Scalar(255,0,0);
+Scalar purple(184, 114, 216);
+Scalar ade004(173,224,4);
+
 bool verbose = false;
 
 /* Global variables */

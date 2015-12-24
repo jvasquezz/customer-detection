@@ -55,6 +55,7 @@ int main(int argc, const char * argv[]) {
         diff = basegrays - grays;
         
         Mat diff2 = grays - basegrays;
+        imshow("Diff2", diff2);
         diff = diff < 60;
 
 //        int ksize = (sigma*5)|1;
@@ -107,7 +108,6 @@ int main(int argc, const char * argv[]) {
         Laplacian(smoothed, laplace, CV_16S, 5);
         convertScaleAbs(laplace, result, (sigma+1)*0.25);
         
-        
         imshow("diff", diff);
 
         Mat threshold_output;
@@ -140,14 +140,13 @@ int main(int argc, const char * argv[]) {
         Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
         for( int i = 0; i< contours.size(); i++ )
         {
-            Scalar color = Scalar(0,255,255);
-            
+
             /** @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
-            double res = norm(boundRectOut[i].tl() - boundRectOut[i].br());//Euclidian distance
-            if(res > 35 && res < 600 && (boundRectOut[i].height > 45 && boundRectOut[i].width > 45) ) {
+//            double res = norm(boundRectOut[i].tl() - boundRectOut[i].br());//Euclidian distance
+//            if(boundRectOut[i].height > 45 && boundRectOut[i].width > 45) {
 //                rectangle( cusframe, boundRectOut[i].tl(), boundRectOut[i].br(), color, 2, 8, 0 );
-                rectangle( cusframe, boundRectOut[i].tl(), boundRectOut[i].br(), color, 3, 8, 0 );
-            }
+                rectangle( cusframe, boundRectOut[i].tl(), boundRectOut[i].br(), yellow, 3, 8, 0 );
+//            }
 //            if( (int)radius[i] > 50) {
 ////                circle( cusframe, center[i], (int)radius[i], color, 2, 8, 0 );
 //                circle(cusframe, center[i], 3, color, 20, 2, 0);
@@ -155,8 +154,6 @@ int main(int argc, const char * argv[]) {
         }
 
         
-        
-//        imshow("Frame", frame);
         imshow("Laplacian", result);
 //        imshow("draw", drawing);
 //        imshow("diff", diff);
@@ -172,48 +169,31 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 
+/**  @function mergeOverlappingBoxes */
 void mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *outputBoxes)
 {
     Mat mask = Mat::zeros(image.size(), CV_8UC1); // Mask of original image
     Size scaleFactor(-5,-5); // To expand rectangles, i.e. increase sensitivity to nearby rectangles --can be anything
     for (int i = 0; i < inputBoxes->size(); i++)
     {
-        if(inputBoxes->at(i).height < 25 || inputBoxes->at(i).width < 25)
+        double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
+        /**  @brief filter boxes, ignore too small or big boxes */
+        if((inputBoxes->at(i).height < 45 || inputBoxes->at(i).width < 45)
+           || euclianPointDistance < 35 || euclianPointDistance > 600)
             continue;
         
-        Rect box;
-//        if (inputBoxes->at(i).height > 150) {
-//            box = inputBoxes->at(i);
-//            double hwratio = box.width/box.height;
-//            box.height = 150 ;
-//            box.width = box.height * hwratio;
-//        }
-//        else if(inputBoxes->at(i).height < 40 || inputBoxes->at(i).width < 40) {
-//            /** do not draw */;
-//        }
-//        else {
-//            box = inputBoxes->at(i) + scaleFactor;
-//        }
-        box = inputBoxes->at(i) + scaleFactor;
-        
+        Rect box = inputBoxes->at(i) + scaleFactor;
         rectangle(mask, box, Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
     }
     
     imshow("Amask", mask);
     vector<vector<Point>> contoursOverlap;
-    // Find contours in mask
-    // If bounding boxes overlap, they will be joined by this function call
+    /**  @brief Find contours in mask
+     If bounding boxes overlap, they will be joined by this function call */
     findContours(mask, contoursOverlap, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for (int j = 0; j < contoursOverlap.size(); j++)
     {
         outputBoxes->at(j) = boundingRect(contoursOverlap.at(j));
-    }
-    
-
-    for( int i = 0; i< contoursOverlap.size(); i++ )
-    {
-        Scalar color = Scalar(0,255,255);
-        rectangle( mask, outputBoxes->at(i).tl(), outputBoxes->at(i).br(), color, 2, 8, 0 );
     }
 }
 
@@ -226,9 +206,7 @@ void Erosion( int, void* )
     else if( erosion_elem == 1 ){ erosion_type = MORPH_CROSS; }
     else if( erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
 
-    Mat element = getStructuringElement( erosion_type,
-                                        Size( 2*erosion_size + 1, 2*erosion_size+1 ),
-                                        Point( erosion_size, erosion_size ) );
+    Mat element = getStructuringElement( erosion_type, Size( 2*erosion_size + 1, 2*erosion_size+1 ), Point( erosion_size, erosion_size ) );
 
     /// Apply the erosion operation
     erode( diff, diff, element );
@@ -244,9 +222,7 @@ void Dilation( int, void* )
     else if( dilation_elem == 1 ){ dilation_type = MORPH_CROSS; }
     else if( dilation_elem == 2) { dilation_type = MORPH_ELLIPSE; }
 
-    Mat element = getStructuringElement( dilation_type,
-                                        Size( 2*dilation_size + 1, 2*dilation_size+1 ),
-                                        Point( dilation_size, dilation_size ) );
+    Mat element = getStructuringElement( dilation_type, Size( 2*dilation_size + 1, 2*dilation_size+1 ), Point( dilation_size, dilation_size ) );
     /// Apply the dilation operation
     dilate( diff, diff, element );
     if(verbose)
