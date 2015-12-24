@@ -1,200 +1,245 @@
 #include "/Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h"
 #include "this.dependencies.h"
 
-//#include "opencv2/videoio/videoio.hpp"
-//#include "opencv2/highgui/highgui.hpp"
-//#include "opencv2/imgproc/imgproc.hpp"
-//
-//#include <ctype.h>
-//#include <stdio.h>
 //#include <iostream>
+//#include <fstream>
 //
-//using namespace cv;
+//#include "opencv2/core.hpp"
+//#include "opencv2/core/utility.hpp"
+//#include "opencv2/highgui.hpp"
+//#include "/Users/drifter/Documents/opencv-3.0.0/modules/cudaoptflow/include/opencv2/cudaoptflow.hpp"
+////#include "opencv2/cudaoptflow.hpp"
+//#include "/Users/drifter/Documents/opencv-3.0.0/modules/cudaarithm/include/opencv2/cudaarithm.hpp"
+////#include "opencv2/cudaarithm.hpp"
+//
 //using namespace std;
+//using namespace cv;
+//using namespace cv::cuda;
 //
-//static void help()
+//inline bool isFlowCorrect(Point2f u)
 //{
-//    cout <<
-//    "\nThis program demonstrates Laplace point/edge detection using OpenCV function Laplacian()\n"
-//    "It captures from the camera of your choice: 0, 1, ... default 0\n"
-//    "Call:\n"
-//    "./laplace [camera #, default 0]\n" << endl;
+//    return !cvIsNaN(u.x) && !cvIsNaN(u.y) && fabs(u.x) < 1e9 && fabs(u.y) < 1e9;
 //}
 //
-//enum {GAUSSIAN, BLUR, MEDIAN};
-//
-//int sigma = 3;
-//int smoothType = GAUSSIAN;
-//
-//int main( int argc, char** argv )
+//static Vec3b computeColor(float fx, float fy)
 //{
-//    VideoCapture cap;
-//    help();
-//
-//    cap.open("/Users/drifter/Desktop/capstone/ver.mp4");
-////    if( argc == 1 || (argc == 2 && strlen(argv[1]) == 1 && isdigit(argv[1][0])))
-////        cap.open(argc == 2 ? argv[1][0] - '0' : 0);
-////    else if( argc >= 2 )
-////    {
-////        cap.open(argv[1]);
-////        if( cap.isOpened() )
-////            cout << "Video " << argv[1] <<
-////            ": width=" << cap.get(CAP_PROP_FRAME_WIDTH) <<
-////            ", height=" << cap.get(CAP_PROP_FRAME_HEIGHT) <<
-////            ", nframes=" << cap.get(CAP_PROP_FRAME_COUNT) << endl;
-////        if( argc > 2 && isdigit(argv[2][0]) )
-////        {
-////            int pos;
-////            sscanf(argv[2], "%d", &pos);
-////            cout << "seeking to frame #" << pos << endl;
-////            cap.set(CAP_PROP_POS_FRAMES, pos);
-////        }
-////    }
+//    static bool first = true;
 //    
-//    if( !cap.isOpened() )
+//    // relative lengths of color transitions:
+//    // these are chosen based on perceptual similarity
+//    // (e.g. one can distinguish more shades between red and yellow
+//    //  than between yellow and green)
+//    const int RY = 15;
+//    const int YG = 6;
+//    const int GC = 4;
+//    const int CB = 11;
+//    const int BM = 13;
+//    const int MR = 6;
+//    const int NCOLS = RY + YG + GC + CB + BM + MR;
+//    static Vec3i colorWheel[NCOLS];
+//    
+//    if (first)
 //    {
-//        cout << "Could not initialize capturing...\n";
+//        int k = 0;
+//        
+//        for (int i = 0; i < RY; ++i, ++k)
+//            colorWheel[k] = Vec3i(255, 255 * i / RY, 0);
+//        
+//        for (int i = 0; i < YG; ++i, ++k)
+//            colorWheel[k] = Vec3i(255 - 255 * i / YG, 255, 0);
+//        
+//        for (int i = 0; i < GC; ++i, ++k)
+//            colorWheel[k] = Vec3i(0, 255, 255 * i / GC);
+//        
+//        for (int i = 0; i < CB; ++i, ++k)
+//            colorWheel[k] = Vec3i(0, 255 - 255 * i / CB, 255);
+//        
+//        for (int i = 0; i < BM; ++i, ++k)
+//            colorWheel[k] = Vec3i(255 * i / BM, 0, 255);
+//        
+//        for (int i = 0; i < MR; ++i, ++k)
+//            colorWheel[k] = Vec3i(255, 0, 255 - 255 * i / MR);
+//        
+//        first = false;
+//    }
+//    
+//    const float rad = sqrt(fx * fx + fy * fy);
+//    const float a = atan2(-fy, -fx) / (float) CV_PI;
+//    
+//    const float fk = (a + 1.0f) / 2.0f * (NCOLS - 1);
+//    const int k0 = static_cast<int>(fk);
+//    const int k1 = (k0 + 1) % NCOLS;
+//    const float f = fk - k0;
+//    
+//    Vec3b pix;
+//    
+//    for (int b = 0; b < 3; b++)
+//    {
+//        const float col0 = colorWheel[k0][b] / 255.0f;
+//        const float col1 = colorWheel[k1][b] / 255.0f;
+//        
+//        float col = (1 - f) * col0 + f * col1;
+//        
+//        if (rad <= 1)
+//            col = 1 - rad * (1 - col); // increase saturation with radius
+//        else
+//            col *= .75; // out of range
+//        
+//        pix[2 - b] = static_cast<uchar>(255.0 * col);
+//    }
+//    
+//    return pix;
+//}
+//
+//static void drawOpticalFlow(const Mat_<float>& flowx, const Mat_<float>& flowy, Mat& dst, float maxmotion = -1)
+//{
+//    dst.create(flowx.size(), CV_8UC3);
+//    dst.setTo(Scalar::all(0));
+//    
+//    // determine motion range:
+//    float maxrad = maxmotion;
+//    
+//    if (maxmotion <= 0)
+//    {
+//        maxrad = 1;
+//        for (int y = 0; y < flowx.rows; ++y)
+//        {
+//            for (int x = 0; x < flowx.cols; ++x)
+//            {
+//                Point2f u(flowx(y, x), flowy(y, x));
+//                
+//                if (!isFlowCorrect(u))
+//                    continue;
+//                
+//                maxrad = max(maxrad, sqrt(u.x * u.x + u.y * u.y));
+//            }
+//        }
+//    }
+//    
+//    for (int y = 0; y < flowx.rows; ++y)
+//    {
+//        for (int x = 0; x < flowx.cols; ++x)
+//        {
+//            Point2f u(flowx(y, x), flowy(y, x));
+//            
+//            if (isFlowCorrect(u))
+//                dst.at<Vec3b>(y, x) = computeColor(u.x / maxrad, u.y / maxrad);
+//        }
+//    }
+//}
+//
+//static void showFlow(const char* name, const GpuMat& d_flow)
+//{
+//    GpuMat planes[2];
+//    cuda::split(d_flow, planes);
+//    
+//    Mat flowx(planes[0]);
+//    Mat flowy(planes[1]);
+//    
+//    Mat out;
+//    drawOpticalFlow(flowx, flowy, out, 10);
+//    
+//    imshow(name, out);
+//}
+//
+//int main(int argc, const char* argv[])
+//{
+//    string filename1, filename2;
+//    if (argc < 3)
+//    {
+//        cerr << "Usage : " << argv[0] << " <frame0> <frame1>" << endl;
+//        filename1 = "../data/basketball1.png";
+//        filename2 = "../data/basketball2.png";
+//    }
+//    else
+//    {
+//        filename1 = argv[1];
+//        filename2 = argv[2];
+//    }
+//    
+//    Mat frame0 = imread(filename1, IMREAD_GRAYSCALE);
+//    Mat frame1 = imread(filename2, IMREAD_GRAYSCALE);
+//    
+//    if (frame0.empty())
+//    {
+//        cerr << "Can't open image ["  << filename1 << "]" << endl;
+//        return -1;
+//    }
+//    if (frame1.empty())
+//    {
+//        cerr << "Can't open image ["  << filename2 << "]" << endl;
 //        return -1;
 //    }
 //    
-//    namedWindow( "Laplacian", 0 );
-//    createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );
-//    
-//    Mat smoothed, laplace, result;
-//    
-//    for(;;)
+//    if (frame1.size() != frame0.size())
 //    {
-//        Mat frame;
-//        cap >> frame;
-//        cvtColor(frame, frame, COLOR_BGR2GRAY);
-//        
-//        if( frame.empty() )
-//            break;
-//        //        imshow("orig", frame);
-//        
-//        int ksize = (sigma*5)|1;
-//        if(smoothType == GAUSSIAN)
-//            GaussianBlur(frame, smoothed, Size(ksize, ksize), sigma, sigma);
-//        else if(smoothType == BLUR)
-//            blur(frame, smoothed, Size(ksize, ksize));
-//        else
-//            medianBlur(frame, smoothed, ksize);
-//
-//        
-//        Laplacian(smoothed, laplace, CV_16S, 5);
-//        convertScaleAbs(laplace, result, (sigma+1)*0.25);
-//        imshow("Laplacian", result);
-//        
-//        int c = waitKey(30);
-//        if( c == ' ' )
-//            smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : GAUSSIAN;
-//        if( c == 'q' || c == 'Q' || (c & 255) == 27 )
-//            break;
+//        cerr << "Images should be of equal sizes" << endl;
+//        return -1;
 //    }
 //    
-//    return 0;
-//}
-
-
-//#include "opencv2/video/tracking.hpp"
-//#include "opencv2/highgui/highgui.hpp"
-//
-//#include <stdio.h>
-//
-//using namespace cv;
-//
-//static inline Point calcPoint(Point2f center, double R, double angle)
-//{
-//    return center + Point2f((float)cos(angle), (float)-sin(angle))*(float)R;
-//}
-//
-//static void help()
-//{
-//    printf( "\nExample of c calls to OpenCV's Kalman filter.\n"
-//           "   Tracking of rotating point.\n"
-//           "   Rotation speed is constant.\n"
-//           "   Both state and measurements vectors are 1D (a point angle),\n"
-//           "   Measurement is the real point angle + gaussian noise.\n"
-//           "   The real and the estimated points are connected with yellow line segment,\n"
-//           "   the real and the measured points are connected with red line segment.\n"
-//           "   (if Kalman filter works correctly,\n"
-//           "    the yellow segment should be shorter than the red one).\n"
-//           "\n"
-//           "   Pressing any key (except ESC) will reset the tracking with a different speed.\n"
-//           "   Pressing ESC will stop the program.\n"
-//           );
-//}
-//
-//int main(int, char**)
-//{
-//    help();
-//    Mat img(500, 500, CV_8UC3);
-//    KalmanFilter KF(2, 1, 0);
-//    Mat state(2, 1, CV_32F); /* (phi, delta_phi) */
-//    Mat processNoise(2, 1, CV_32F);
-//    Mat measurement = Mat::zeros(1, 1, CV_32F);
-//    char code = (char)-1;
+//    GpuMat d_frame0(frame0);
+//    GpuMat d_frame1(frame1);
 //    
-//    for(;;)
+//    GpuMat d_flow(frame0.size(), CV_32FC2);
+//    
+//    Ptr<cuda::BroxOpticalFlow> brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
+//    Ptr<cuda::DensePyrLKOpticalFlow> lk = cuda::DensePyrLKOpticalFlow::create(Size(7, 7));
+//    Ptr<cuda::FarnebackOpticalFlow> farn = cuda::FarnebackOpticalFlow::create();
+//    Ptr<cuda::OpticalFlowDual_TVL1> tvl1 = cuda::OpticalFlowDual_TVL1::create();
+//    
 //    {
-//        randn( state, Scalar::all(0), Scalar::all(0.1) );
-//        KF.transitionMatrix = (Mat_<float>(2, 2) << 1, 1, 0, 1);
+//        GpuMat d_frame0f;
+//        GpuMat d_frame1f;
 //        
-//        setIdentity(KF.measurementMatrix);
-//        setIdentity(KF.processNoiseCov, Scalar::all(1e-5));
-//        setIdentity(KF.measurementNoiseCov, Scalar::all(1e-1));
-//        setIdentity(KF.errorCovPost, Scalar::all(1));
+//        d_frame0.convertTo(d_frame0f, CV_32F, 1.0 / 255.0);
+//        d_frame1.convertTo(d_frame1f, CV_32F, 1.0 / 255.0);
 //        
-//        randn(KF.statePost, Scalar::all(0), Scalar::all(0.1));
+//        const int64 start = getTickCount();
 //        
-//        for(;;)
-//        {
-//            Point2f center(img.cols*0.5f, img.rows*0.5f);
-//            float R = img.cols/3.f;
-//            double stateAngle = state.at<float>(0);
-//            Point statePt = calcPoint(center, R, stateAngle);
-//            
-//            Mat prediction = KF.predict();
-//            double predictAngle = prediction.at<float>(0);
-//            Point predictPt = calcPoint(center, R, predictAngle);
-//            
-//            randn( measurement, Scalar::all(0), Scalar::all(KF.measurementNoiseCov.at<float>(0)));
-//            
-//            // generate measurement
-//            measurement += KF.measurementMatrix*state;
-//            
-//            double measAngle = measurement.at<float>(0);
-//            Point measPt = calcPoint(center, R, measAngle);
-//            
-//            // plot points
-//#define drawCross( center, color, d )                                        \
-//line( img, Point( center.x - d, center.y - d ),                          \
-//Point( center.x + d, center.y + d ), color, 1, LINE_AA, 0); \
-//line( img, Point( center.x + d, center.y - d ),                          \
-//Point( center.x - d, center.y + d ), color, 1, LINE_AA, 0 )
-//            
-//            img = Scalar::all(0);
-//            drawCross( statePt, Scalar(255,255,255), 3 );
-//            drawCross( measPt, Scalar(0,0,255), 3 );
-//            drawCross( predictPt, Scalar(0,255,0), 3 );
-//            line( img, statePt, measPt, Scalar(0,0,255), 3, LINE_AA, 0 );
-//            line( img, statePt, predictPt, Scalar(0,255,255), 3, LINE_AA, 0 );
-//            
-//            if(theRNG().uniform(0,4) != 0)
-//                KF.correct(measurement);
-//            
-//            randn( processNoise, Scalar(0), Scalar::all(sqrt(KF.processNoiseCov.at<float>(0, 0))));
-//            state = KF.transitionMatrix*state + processNoise;
-//            
-//            imshow( "Kalman", img );
-//            code = (char)waitKey(100);
-//            
-//            if( code > 0 )
-//                break;
-//        }
-//        if( code == 27 || code == 'q' || code == 'Q' )
-//            break;
+//        brox->calc(d_frame0f, d_frame1f, d_flow);
+//        
+//        const double timeSec = (getTickCount() - start) / getTickFrequency();
+//        cout << "Brox : " << timeSec << " sec" << endl;
+//        
+//        showFlow("Brox", d_flow);
 //    }
+//    
+//    {
+//        const int64 start = getTickCount();
+//        
+//        lk->calc(d_frame0, d_frame1, d_flow);
+//        
+//        const double timeSec = (getTickCount() - start) / getTickFrequency();
+//        cout << "LK : " << timeSec << " sec" << endl;
+//        
+//        showFlow("LK", d_flow);
+//    }
+//    
+//    {
+//        const int64 start = getTickCount();
+//        
+//        farn->calc(d_frame0, d_frame1, d_flow);
+//        
+//        const double timeSec = (getTickCount() - start) / getTickFrequency();
+//        cout << "Farn : " << timeSec << " sec" << endl;
+//        
+//        showFlow("Farn", d_flow);
+//    }
+//    
+//    {
+//        const int64 start = getTickCount();
+//        
+//        tvl1->calc(d_frame0, d_frame1, d_flow);
+//        
+//        const double timeSec = (getTickCount() - start) / getTickFrequency();
+//        cout << "TVL1 : " << timeSec << " sec" << endl;
+//        
+//        showFlow("TVL1", d_flow);
+//    }
+//    
+//    imshow("Frame 0", frame0);
+//    imshow("Frame 1", frame1);
+//    waitKey();
 //    
 //    return 0;
 //}
@@ -273,11 +318,13 @@
 //    namedWindow("FG Mask MOG 2");
 //    
 //    //create Background Subtractor objects
+////    pMOG2 = createBackgroundSubtractorMOG2(200,200, false);
 //    pMOG2 = createBackgroundSubtractorMOG2(); //MOG2 approach
 //    
 //    if(strcmp("-vid", "-vid") == 0) {
 //        //input data coming from a video
-//        processVideo("/Users/drifter/Desktop/capstone/ver.mp4");
+//        char atLocation[100] = "/Users/drifter/Desktop/capstone/ver.mp4";
+//        processVideo(atLocation);
 //    }
 //    else if(strcmp(argv[1], "-img") == 0) {
 //        //input data coming from a sequence of images
@@ -317,12 +364,12 @@
 //        pMOG2->apply(frame, fgMaskMOG2);
 //        //get the frame number and write it on the current frame
 //        stringstream ss;
-//        rectangle(frame, cv::Point(10, 2), cv::Point(100,20),
-//                  cv::Scalar(255,255,255), -1);
+////        rectangle(frame, cv::Point(10, 2), cv::Point(100,20),
+////                  cv::Scalar(255,255,255), -1);
 //        ss << capture.get(CAP_PROP_POS_FRAMES);
 //        string frameNumberString = ss.str();
-//        putText(frame, frameNumberString.c_str(), cv::Point(15, 15),
-//                FONT_HERSHEY_SIMPLEX, 0.5 , cv::Scalar(0,0,0));
+//        putText(frame, frameNumberString.c_str(), cv::Point(frame.cols-100, frame.rows-15),
+//                FONT_HERSHEY_SIMPLEX, 0.5 , cv::Scalar(255,255,255));
 //        //show the current frame and the fg masks
 //        imshow("Frame", frame);
 //        imshow("FG Mask MOG 2", fgMaskMOG2);
@@ -387,6 +434,245 @@
 //        fn.assign(nextFrameFilename);
 //    }
 //}
+//
+
+
+
+//
+//#include "opencv2/videoio/videoio.hpp"
+//#include "opencv2/highgui/highgui.hpp"
+//#include "opencv2/imgproc/imgproc.hpp"
+//
+//#include <ctype.h>
+//#include <stdio.h>
+//#include <iostream>
+//
+//using namespace cv;
+//using namespace std;
+//
+//static void help()
+//{
+//    cout <<
+//    "\nThis program demonstrates Laplace point/edge detection using OpenCV function Laplacian()\n"
+//    "It captures from the camera of your choice: 0, 1, ... default 0\n"
+//    "Call:\n"
+//    "./laplace [camera #, default 0]\n" << endl;
+//}
+//
+//enum {GAUSSIAN, BLUR, MEDIAN};
+//
+//int sigma = 3;
+//int smoothType = GAUSSIAN;
+//int ksize = (sigma*5)|1;
+
+//
+//int main( int argc, char** argv )
+//{
+//    VideoCapture cap;
+//    if(verbose)
+//        help();
+//
+//    baseframe = imread(BASEFRAME_DIR);
+//    cap.open("/Users/drifter/Desktop/capstone/ver.mp4");
+////    if( argc == 1 || (argc == 2 && strlen(argv[1]) == 1 && isdigit(argv[1][0])))
+////        cap.open(argc == 2 ? argv[1][0] - '0' : 0);
+////    else if( argc >= 2 )
+////    {
+////        cap.open(argv[1]);
+////        if( cap.isOpened() )
+////            cout << "Video " << argv[1] <<
+////            ": width=" << cap.get(CAP_PROP_FRAME_WIDTH) <<
+////            ", height=" << cap.get(CAP_PROP_FRAME_HEIGHT) <<
+////            ", nframes=" << cap.get(CAP_PROP_FRAME_COUNT) << endl;
+////        if( argc > 2 && isdigit(argv[2][0]) )
+////        {
+////            int pos;
+////            sscanf(argv[2], "%d", &pos);
+////            cout << "seeking to frame #" << pos << endl;
+////            cap.set(CAP_PROP_POS_FRAMES, pos);
+////        }
+////    }
+//
+//    if( !cap.isOpened() )
+//    {
+//        cout << "Could not initialize capturing...\n";
+//        return -1;
+//    }
+//
+//    namedWindow( "Laplacian", 0 );
+//    createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );
+//
+//    Mat smoothed, laplace, result;
+//    vector<Vec3f> hcircles;
+//
+//    /* mold: A hollow form or matrix for shaping a single line from the video. */
+//    /* constructor for Rect: Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height); */
+//    Rect mold(0,baseframe.rows/4,baseframe.cols,baseframe.rows/2);
+//    Rect tightMold(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
+//    
+//    for(;;)
+//    {
+//        Mat frame;
+//        
+//        cap >> frame;
+//        frame = frame(tightMold);
+//        cvtColor(frame, frame, COLOR_BGR2GRAY);
+//        Mat sketching(frame);
+//        
+//        if( frame.empty() )
+//            break;
+////        imshow("orig", frame);
+//
+//        int ksize = (sigma*5)|1;
+////        if(smoothType == GAUSSIAN)
+////            GaussianBlur(frame, smoothed, Size(ksize, ksize), sigma, sigma);
+////        else if(smoothType == BLUR)
+////            blur(frame, smoothed, Size(ksize, ksize));
+////        else
+//            medianBlur(frame, smoothed, ksize);
+//
+//        Laplacian(smoothed, laplace, CV_16S, 5);
+//        convertScaleAbs(laplace, result, (sigma+1)*0.25);
+//        
+//        Mat laplace8u,circles;
+//        convertScaleAbs(laplace, laplace8u, CV_16U, 5);
+////        HoughCircles(laplace8u, hcircles, CV_HOUGH_GRADIENT, 1, 20);
+//        
+//        imshow("laplace8u", laplace8u);
+//        for( size_t i = 0; i < hcircles.size(); i++ )
+//        {
+//            Point center(cvRound(hcircles[i][0]), cvRound(hcircles[i][1]));
+//            int radius = cvRound(hcircles[i][2]);
+//            // draw the circle center
+//            circle( sketching, center, 3, Scalar(0,255,0), -1, 8, 0 );
+//            // draw the circle outline
+//            circle( sketching, center, radius, Scalar(0,0,255), 3, 8, 0 );
+//        }
+//        
+////        imshow("Frame", frame);
+////        imshow("Laplacian", result);
+////        imshow("HoughCircles", sketching);
+//        
+//        int c = waitKey(30);
+//        if( c == ' ' )
+//            smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : GAUSSIAN;
+//        if( c == 'q' || c == 'Q' || (c & 255) == 27 )
+//            break;
+//    }
+//
+//    return 0;
+//}
+
+
+//#include "opencv2/video/tracking.hpp"
+//#include "opencv2/highgui/highgui.hpp"
+//
+//#include <stdio.h>
+//
+//using namespace cv;
+//
+//static inline Point calcPoint(Point2f center, double R, double angle)
+//{
+//    return center + Point2f((float)cos(angle), (float)-sin(angle))*(float)R;
+//}
+//
+//static void help()
+//{
+//    printf( "\nExample of c calls to OpenCV's Kalman filter.\n"
+//           "   Tracking of rotating point.\n"
+//           "   Rotation speed is constant.\n"
+//           "   Both state and measurements vectors are 1D (a point angle),\n"
+//           "   Measurement is the real point angle + gaussian noise.\n"
+//           "   The real and the estimated points are connected with yellow line segment,\n"
+//           "   the real and the measured points are connected with red line segment.\n"
+//           "   (if Kalman filter works correctly,\n"
+//           "    the yellow segment should be shorter than the red one).\n"
+//           "\n"
+//           "   Pressing any key (except ESC) will reset the tracking with a different speed.\n"
+//           "   Pressing ESC will stop the program.\n"
+//           );
+//}
+//
+//int main(int, char**)
+//{
+//    help();
+//    Mat img(500, 500, CV_8UC3);
+//    KalmanFilter KF(2, 1, 0);
+//    Mat state(2, 1, CV_32F); /* (phi, delta_phi) */
+//    Mat processNoise(2, 1, CV_32F);
+//    Mat measurement = Mat::zeros(1, 1, CV_32F);
+//    char code = (char)-1;
+//
+//    for(;;)
+//    {
+//        randn( state, Scalar::all(0), Scalar::all(0.1) );
+//        KF.transitionMatrix = (Mat_<float>(2, 2) << 1, 1, 0, 1);
+//
+//        setIdentity(KF.measurementMatrix);
+//        setIdentity(KF.processNoiseCov, Scalar::all(1e-5));
+//        setIdentity(KF.measurementNoiseCov, Scalar::all(1e-1));
+//        setIdentity(KF.errorCovPost, Scalar::all(1));
+//
+//        randn(KF.statePost, Scalar::all(0), Scalar::all(0.1));
+//
+//        for(;;)
+//        {
+//            Point2f center(img.cols*0.5f, img.rows*0.5f);
+//            float R = img.cols/3.f;
+//            double stateAngle = state.at<float>(0);
+//            Point statePt = calcPoint(center, R, stateAngle);
+//
+//            Mat prediction = KF.predict();
+//            double predictAngle = prediction.at<float>(0);
+//            Point predictPt = calcPoint(center, R, predictAngle);
+//
+//            randn( measurement, Scalar::all(0), Scalar::all(KF.measurementNoiseCov.at<float>(0)));
+//
+//            // generate measurement
+//            measurement += KF.measurementMatrix*state;
+//
+//            double measAngle = measurement.at<float>(0);
+//            Point measPt = calcPoint(center, R, measAngle);
+//
+//            // plot points
+//#define drawCross( center, color, d )                                        \
+//line( img, Point( center.x - d, center.y - d ),                          \
+//Point( center.x + d, center.y + d ), color, 1, LINE_AA, 0); \
+//line( img, Point( center.x + d, center.y - d ),                          \
+//Point( center.x - d, center.y + d ), color, 1, LINE_AA, 0 )
+//
+//            img = Scalar::all(0);
+//            drawCross( statePt, Scalar(255,255,255), 3 );
+//            drawCross( measPt, Scalar(0,0,255), 3 );
+//            drawCross( predictPt, Scalar(0,255,0), 3 );
+//            line( img, statePt, measPt, Scalar(0,0,255), 3, LINE_AA, 0 );
+//            line( img, statePt, predictPt, Scalar(0,255,255), 3, LINE_AA, 0 );
+//
+//            if(theRNG().uniform(0,4) != 0)
+//                KF.correct(measurement);
+//
+//            randn( processNoise, Scalar(0), Scalar::all(sqrt(KF.processNoiseCov.at<float>(0, 0))));
+//            state = KF.transitionMatrix*state + processNoise;
+//
+//            imshow( "Kalman", img );
+//            code = (char)waitKey(100);
+//
+//            if( code > 0 )
+//                break;
+//        }
+//        if( code == 27 || code == 'q' || code == 'Q' )
+//            break;
+//    }
+//
+//    return 0;
+//}
+
+
+
+
+
+
+
 
 
 ////
@@ -880,81 +1166,327 @@
 //
 //
 
+
+
+
 int main(int argc, const char * argv[]) {
+    
+
+    enum {GAUSSIAN, BLUR, MEDIAN};
+    
+    int sigma = 3;
+    int smoothType = GAUSSIAN;
+    int ksize = (sigma*5)|1;
     // insert code here...
-    cframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/frame.png",0);
-    templ = imread("/Users/drifter/Desktop/match.png",0);
-//    pyrDown(templ, templ);
-//    pyrDown(templ, templ);
-//    pyrDown(cframe, cframe);
-//    pyrDown(cframe, cframe);
-    //    resize(templ, templ, Size(templ.cols/1.3,templ.rows/1.3));
+    VideoCapture cap;
+//    cap.open("/Users/drifter/Desktop/capstone/SEGMENTA_720P_20FPS.mp4");
+//    cap.open("/Users/drifter/Desktop/capstone/ver.mp4");
+//    cap.open("/Users/drifter/Desktop/capstone/Untitled.mp4");
+//    cap.open("/Users/drifter/Desktop/capstone/30FPS.mp4");
+//    cap.open("/Users/drifter/Desktop/capstone/6FPS.mp4");
+//    cap.open("/Users/drifter/Desktop/capstone/1FPS.mp4");
+//    cap.open("/Users/drifter/Desktop/capstone/3FPS.mp4");
+    cap.open("/Users/drifter/Desktop/capstone/10FPS.mp4");
+//    cframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/frame.png",0);
+    baseframe = imread(BASEFRAME_DIR);
     
-    if(not cframe.data)
-        return -1;
+    namedWindow( "Laplacian", 0 );
+    createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );
+    //
+    Mat smoothed, laplace, result;
 
-    img = cframe;
-//    cframe = cframe < 75;
+    /* mold: A hollow form or matrix for shaping a single line from the video. */
+    /* constructor for Rect: Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height); */
+    Rect mold(0,baseframe.rows/4,baseframe.cols,baseframe.rows/2);
+    Rect tightMold(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
+
+    Mat frame, bframe, cusframe;
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
+    int thresh = 100;
+    bframe = baseframe(mold);
+    Mat secBaseFrame, tempY;
+    cap >> tempY;
+    secBaseFrame = tempY(mold);
     
-//    cvtColor( cframe, cframe , COLOR_BGR2GRAY );
-    /// Create Trackbar
-    char trackbar_label[200] = "Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED";
-    createTrackbar( trackbar_label, image_window, &match_method, max_Trackbar, MatchingMethod );
+    for(;;) {
+        cap >> frame;
+        cusframe = frame(mold);
+        /* constructor for resize: resize(InputArray src, OutputArray dst, Size dsize) */
+//        Size size(baseframe.cols/2,baseframe.rows/2);
+//        resize(frame, frame, size);
+//        resize(baseframe, baseframe, size);
+        
+//        imshow("secBase", secBaseFrame);
+//        imshow("cus2frame", cusframe);
+        
+//        imshow("sec - base",  bframe - secBaseFrame  );
+//        imshow("sec - base",  secBaseFrame - bframe );
+        
+//        frame = frame(tightMold);
 
-    MatchingMethod( 0, 0 );
+        
+        Mat grays, basegrays;
+        cvtColor(cusframe, grays, COLOR_BGR2GRAY);
+        cvtColor(bframe, basegrays, COLOR_BGR2GRAY);
+        diff = basegrays - grays;
+        
+//        imshow("basegrays", grays*4);
+//        diff = grays - basegrays;
+        Mat diff2 = grays - basegrays;
+        diff = diff < 60;
+
+//        int ksize = (sigma*5)|1;
+        blur(frame, smoothed, Size(ksize, ksize));
+//        if(smoothType == GAUSSIAN)
+//            GaussianBlur(frame, smoothed, Size(ksize, ksize), sigma, sigma);
+//        else if(smoothType == BLUR)
+//            blur(frame, smoothed, Size(ksize, ksize));
+//        else
+//            medianBlur(frame, smoothed, ksize);
+        
+//        medianBlur(diff, smoothed, ksize);
+//        //
+//        Laplacian(smoothed, laplace, CV_16S, 5);
+//        convertScaleAbs(laplace, result, (sigma+1)*0.25);
+        
+        createTrackbar( "Kernel size Erosion:\n 2n +1", "cusframe",
+                       &erosion_size, max_kernel_size,
+                       Erosion );
     
-//    GaussianBlur(cframe, cframe, Size(7,7), 1.5, 1.5);
+        /// Create Dilation Trackbar
+//        createTrackbar( "Element:\n 0: Rect \n 1: Cross \n 2: Ellipse", "Dilation",
+//                       &dilation_elem, max_elem,
+//                       Dilation );
+//
+        createTrackbar( "Kernel size Dilation:\n 2n +1", "cusframe",
+                       &dilation_size, max_kernel_size,
+                       Dilation );
+//
+//        /// Create window
+//        namedWindow( morph, CV_WINDOW_AUTOSIZE );
+//    
+        /// Create Trackbar to select Morphology operation
+        createTrackbar("Operator:\n 0: Opening - 1: Closing \n 2: Gradient - 3: Top Hat \n 4: Black Hat", morph, &morph_operator, max_operator, Morphology_Operations );
     
-//    Canny(cframe, cframe, 0, 30, 3);
+        /// Create Trackbar to select kernel type
+        createTrackbar( "Element:\n 0: Rect - 1: Cross - 2: Ellipse", morph,
+                       &morph_elem, max_elem,
+                       Morphology_Operations );
+    
+        /// Create Trackbar to choose kernel size
+        createTrackbar( "Kernel size:\n 2n +1", morph,
+                       &morph_size, max_kernel_size,
+                       Morphology_Operations );
 
-//    erode( cframe, cframe, e_element );
+        
+        /// Default start
+        Erosion( 0, 0 );
+        Dilation( 0, 0 );
+//        Morphology_Operations( 0, 0 );
 
-    imshow("current frame", cframe);
-    waitKey(0);
+        medianBlur(diff, smoothed, ksize);
+//        result = smoothed;
+        //
+        Mat rest, rest2;
+//        Laplacian(smoothed, laplace, CV_16S, 5);
+//        convertScaleAbs(laplace, rest, (sigma+1)*0.25);
+//        
+//        Laplacian(rest, laplace, CV_16S, 5);
+//        convertScaleAbs(laplace, rest2, (sigma+1)*0.25);
+
+        Laplacian(smoothed, laplace, CV_16S, 5);
+        convertScaleAbs(laplace, result, (sigma+1)*0.25);
+        
+        
+        imshow("diff", diff);
+
+        Mat threshold_output;
+//        vector<vector<Point> > contours;
+        vector<Vec4i> hierarchy;
+        
+        /// Detect edges using Threshold
+        threshold( result, threshold_output, thresh, 255, THRESH_BINARY );
+        /// Find contours
+        findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+        
+        /// Approximate contours to polygons + get bounding rects and circles
+        vector<vector<Point> > contours_poly( contours.size() );
+        vector<Rect> boundRect( contours.size() );
+        vector<Point2f>center( contours.size() );
+        vector<float>radius( contours.size() );
+        
+
+        for( int i = 0; i < contours.size(); i++ )
+        { approxPolyDP( Mat(contours[i]), contours_poly[i], 10, true );
+//            approxPolyDP(<#InputArray curve#>, <#OutputArray approxCurve#>, <#double epsilon#>, <#bool closed#>)
+            boundRect[i] = boundingRect( Mat(contours_poly[i]) );
+            minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+        }
+        
+        
+        /// Draw polygonal contour + bonding rects + circles
+        Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+        for( int i = 0; i< contours.size(); i++ )
+        {
+            Scalar color = Scalar(0,255,255);
+            
+            /**rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
+            double res = cv::norm(boundRect[i].tl() - boundRect[i].br());//Euclidian distance
+            if(res > 40 && res < 800 && (boundRect[i].height > 50 && boundRect[i].width > 50) ) {
+                rectangle( cusframe, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
+            }
+//            if( (int)radius[i] > 50) {
+////                circle( cusframe, center[i], (int)radius[i], color, 2, 8, 0 );
+//                circle(cusframe, center[i], 3, color, 20, 2, 0);
+//            }
+        }
+        
+//        vector<Vec4i> lines;
+//        HoughLinesP( diff, lines, 1, CV_PI/180, 80, 30, 10 );
+//        for( size_t i = 0; i < lines.size(); i++ )
+//        {
+//            line( cusframe, Point(lines[i][0], lines[i][1]),
+//                 Point(lines[i][2], lines[i][3]), Scalar(0,0,255), 3, 8 );
+//        }
+
+
+
+        
+        
+//        imshow("Frame", frame);
+        imshow("Laplacian", result);
+//        imshow("HoughCircles", sketching);
+//        imshow("draw", drawing);
+//        imshow("diff", diff);
+//        imshow("diff2", diff2);
+        imshow("cusframe", cusframe);
+        int c = waitKey(1);
+        if( c == ' ' )
+            smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : GAUSSIAN;
+        if( c == 'q' || c == 'Q' || (c & 255) == 27 )
+            break;
+        
+//        imshow("cusframe", cusframe);
+//        waitKey(1);
+    }
+    
     return 0;
 }
 
-/**
- * @function MatchingMethod
- * @brief Trackbar callback
- */
-void MatchingMethod( int, void* )
+void mergeOverlappingBoxes(std::vector<cv::Rect> &inputBoxes, cv::Mat &image, std::vector<cv::Rect> &outputBoxes)
 {
-    /// Source image to display
-    Mat img_display;
-    img.copyTo( img_display );
-    Mat tmp2 = imread("/Users/drifter/Desktop/laplacian.png", 0);
-    Size size(img.cols, img.rows);
-    resize(tmp2, tmp2, size);
-    addWeighted(img, .5, tmp2, .5, 0.0, tmp2);
+    cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1); // Mask of original image
+    cv::Size scaleFactor(10,10); // To expand rectangles, i.e. increase sensitivity to nearby rectangles. Doesn't have to be (10,10)--can be anything
+    for (int i = 0; i < inputBoxes.size(); i++)
+    {
+        cv::Rect box = inputBoxes.at(i) + scaleFactor;
+        cv::rectangle(mask, box, cv::Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
+    }
     
-    /// Create the result matrix
-    int result_cols =  img.cols - templ.cols + 1;
-    int result_rows = img.rows - templ.rows + 1;
-    
-    result.create( result_rows, result_cols, CV_32FC1 );
-    
-    /// Do the Matching and Normalize
-    matchTemplate( img, templ, result, match_method );
-    normalize( result, result, 0, 1, NORM_MINMAX, -1, Mat() );
-    
-    /// Localizing the best match with minMaxLoc
-    double minVal; double maxVal; Point minLoc; Point maxLoc;
-    Point matchLoc;
-    
-    minMaxLoc( result, &minVal, &maxVal, &minLoc, &maxLoc, Mat() );
-    
-    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
-    if( match_method  == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED )
-    { matchLoc = minLoc; }
-    else
-    { matchLoc = maxLoc; }
-    
-    /// Show me what you got
-    rectangle( img_display, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
-    rectangle( result, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
-    
-    imshow( image_window, img_display );
-    imshow( result_window, result );
-    
+    std::vector<std::vector<cv::Point>> contours;
+    // Find contours in mask
+    // If bounding boxes overlap, they will be joined by this function call
+    cv::findContours(mask, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    for (int j = 0; j < contours.size(); j++)
+    {
+        outputBoxes.push_back(cv::boundingRect(contours.at(j)));
+    }
+}
+
+
+///**
+// * @function MatchingMethod
+// * @brief Trackbar callback
+// */
+//void MatchingMethod( int, void* )
+//{
+//    /// Source image to display
+//    Mat img_display;
+//    img.copyTo( img_display );
+//    Mat tmp2 = imread("/Users/drifter/Desktop/laplacian.png", 0);
+//    Size size(img.cols, img.rows);
+//    resize(tmp2, tmp2, size);
+//    addWeighted(img, .5, tmp2, .5, 0.0, tmp2);
+//    
+//    /// Create the result matrix
+//    int result_cols =  img.cols - templ.cols + 1;
+//    int result_rows = img.rows - templ.rows + 1;
+//    
+//    result.create( result_rows, result_cols, CV_32FC1 );
+//    
+//    /// Do the Matching and Normalize
+//    matchTemplate( img, templ, result, match_method );
+//    normalize( result, result, 0, 1, NORM_MINMAX, -1, Mat() );
+//    
+//    /// Localizing the best match with minMaxLoc
+//    double minVal; double maxVal; Point minLoc; Point maxLoc;
+//    Point matchLoc;
+//    
+//    minMaxLoc( result, &minVal, &maxVal, &minLoc, &maxLoc, Mat() );
+//    
+//    /// For SQDIFF and SQDIFF_NORMED, the best matches are lower values. For all the other methods, the higher the better
+//    if( match_method  == CV_TM_SQDIFF || match_method == CV_TM_SQDIFF_NORMED )
+//    { matchLoc = minLoc; }
+//    else
+//    { matchLoc = maxLoc; }
+//    
+//    /// Show me what you got
+//    rectangle( img_display, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
+//    rectangle( result, matchLoc, Point( matchLoc.x + templ.cols , matchLoc.y + templ.rows ), Scalar::all(0), 2, 8, 0 );
+//    
+//    imshow( image_window, img_display );
+//    imshow( result_window, result );
+//    
+//}
+
+
+
+/**  @function Erosion  */
+void Erosion( int, void* )
+{
+    int erosion_type;
+    if( erosion_elem == 0 ){ erosion_type = MORPH_RECT; }
+    else if( erosion_elem == 1 ){ erosion_type = MORPH_CROSS; }
+    else if( erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+    Mat element = getStructuringElement( erosion_type,
+                                        Size( 2*erosion_size + 1, 2*erosion_size+1 ),
+                                        Point( erosion_size, erosion_size ) );
+
+    /// Apply the erosion operation
+    erode( diff, diff, element );
+    imshow( "Erosion", diff );
+}
+
+/** @function Dilation */
+void Dilation( int, void* )
+{
+    int dilation_type;
+    if( dilation_elem == 0 ){ dilation_type = MORPH_RECT; }
+    else if( dilation_elem == 1 ){ dilation_type = MORPH_CROSS; }
+    else if( dilation_elem == 2) { dilation_type = MORPH_ELLIPSE; }
+
+    Mat element = getStructuringElement( dilation_type,
+                                        Size( 2*dilation_size + 1, 2*dilation_size+1 ),
+                                        Point( dilation_size, dilation_size ) );
+    /// Apply the dilation operation
+    dilate( diff, diff, element );
+    imshow( "Dilation", diff );
+}
+
+/**
+ * @function Morphology_Operations
+ */
+void Morphology_Operations( int, void* )
+{
+    // Since MORPH_X : 2,3,4,5 and 6
+    int operation = morph_operator + 2;
+
+    /* Make your own kernel mask */
+    Mat element = getStructuringElement( morph_elem, Size( 2*morph_size + 1, 2*morph_size+1 ), Point( morph_size, morph_size ) );
+
+    /// Apply the specified morphology operation
+    morphologyEx( diff, diff, operation, element );
+    imshow( morph, diff );
 }

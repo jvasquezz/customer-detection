@@ -1,9 +1,22 @@
+#include <math.h>
+Mat diff;
+
+#include "opencv2/videoio/videoio.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include <ctype.h>
+#include <stdio.h>
+#include <iostream>
+
+bool verbose = false;
+
 /* Global variables */
 Mat src, erosion_dst, dilation_dst;
 Mat cframe, dst;
 Mat img;
 Mat templ;
 Mat result;
+
 
 Size size(720,720);//the dst image size,e.g.100x100
 

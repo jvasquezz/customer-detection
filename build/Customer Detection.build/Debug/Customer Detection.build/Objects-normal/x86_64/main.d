@@ -40,4 +40,5 @@ dependencies: \
   /usr/local/include/opencv2/videoio.hpp \
   /usr/local/include/opencv2/imgproc/imgproc.hpp \
   /usr/local/include/opencv2/imgproc.hpp \
-  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/this.dependencies.h
+  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/this.dependencies.h \
+  /usr/local/include/opencv2/videoio/videoio.hpp
