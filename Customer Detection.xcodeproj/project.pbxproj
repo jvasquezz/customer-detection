@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FE0EF9561C2C240C00B49547 /* ORmethods.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE0EF9551C2C240C00B49547 /* ORmethods.cpp */; };
 		FE84653C1C23440D00274A19 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE84653B1C23440D00274A19 /* main.cpp */; };
 /* End PBXBuildFile section */
 
@@ -23,6 +24,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FE0EF9551C2C240C00B49547 /* ORmethods.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ORmethods.cpp; sourceTree = "<group>"; };
 		FE8465381C23440D00274A19 /* Customer Detection */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Customer Detection"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FE84653B1C23440D00274A19 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		FE8465421C234EE300274A19 /* this.dependencies.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = this.dependencies.h; sourceTree = "<group>"; };
@@ -60,6 +62,7 @@
 			children = (
 				FE84653B1C23440D00274A19 /* main.cpp */,
 				FE8465421C234EE300274A19 /* this.dependencies.h */,
+				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
 			);
 			path = "Customer Detection";
 			sourceTree = "<group>";
@@ -121,6 +124,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FE84653C1C23440D00274A19 /* main.cpp in Sources */,
+				FE0EF9561C2C240C00B49547 /* ORmethods.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,6 +285,7 @@
 				FE8465411C23440D00274A19 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
