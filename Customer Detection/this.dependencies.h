@@ -85,7 +85,7 @@ void MatchingMethod( int, void* );
 void mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes);
 //void mergeOverlappingBoxes(std::vector<cv::Rect> &inputBoxes, cv::Mat &image, std::vector<cv::Rect> &outputBoxes);
 
-vector<vector<Point> > contours;
+//vector<vector<Point> > contours;
 vector<Vec4i> hierarchy;
 
 /* For slider */

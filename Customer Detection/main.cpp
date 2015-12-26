@@ -8,7 +8,7 @@ int main(int argc, const char * argv[]) {
     enum {GAUSSIAN, BLUR, MEDIAN};
     
     int sigma = 3;
-    int smoothType = GAUSSIAN;
+    int smoothType = MEDIAN;
     int ksize = (sigma*5)|1;
     // insert code here...
     VideoCapture cap;
@@ -24,16 +24,18 @@ int main(int argc, const char * argv[]) {
     baseframe = imread(BASEFRAME_DIR);
     
     namedWindow( "Laplacian", 0 );
-    //
+    
     Mat smoothed, laplace, result;
 
-    /* mold: A hollow form or matrix for shaping a single line from the video. */
-    /* constructor for Rect: Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height); */
+    /**  mold: A hollow form or matrix for shaping a segment from a frame */
+    /**  @constructor Rect
+    Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
     Rect mold(0,baseframe.rows/4,baseframe.cols,baseframe.rows/2);
     Rect tightMold(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
-
+    Rect conveyorBeltMold(0,baseframe.rows/3,50,50);
+    
     Mat frame, bframe, cusframe;
-    vector<vector<Point> > contours;
+//    vector<vector<Point> > contours;
     vector<Vec4i> hierarchy;
     int thresh = 100;
     bframe = baseframe(mold);
@@ -59,18 +61,13 @@ int main(int argc, const char * argv[]) {
         diff = diff < 60;
 
 //        int ksize = (sigma*5)|1;
-//        blur(frame, smoothed, Size(ksize, ksize));
-//        if(smoothType == GAUSSIAN)
-//            GaussianBlur(frame, smoothed, Size(ksize, ksize), sigma, sigma);
-//        else if(smoothType == BLUR)
-//            blur(frame, smoothed, Size(ksize, ksize));
-//        else
-//            medianBlur(frame, smoothed, ksize);
+        if(smoothType == GAUSSIAN)
+            GaussianBlur(diff, smoothed, Size(ksize, ksize), sigma, sigma);
+        else if(smoothType == BLUR)
+            blur(diff, smoothed, Size(ksize, ksize));
+        else
+            medianBlur(diff, smoothed, ksize);
         
-//        medianBlur(diff, smoothed, ksize);
-//        //
-//        Laplacian(smoothed, laplace, CV_16S, 5);
-//        convertScaleAbs(laplace, result, (sigma+1)*0.25);
         
         createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );
         
@@ -93,17 +90,6 @@ int main(int argc, const char * argv[]) {
         /// Default start
         Erosion( 0, 0 );
         Dilation( 0, 0 );
-//        Morphology_Operations( 0, 0 );
-
-        medianBlur(diff, smoothed, ksize);
-//        result = smoothed;
-
-//        Mat rest, rest2;
-//        Laplacian(smoothed, laplace, CV_16S, 5);
-//        convertScaleAbs(laplace, rest, (sigma+1)*0.25);
-//        
-//        Laplacian(rest, laplace, CV_16S, 5);
-//        convertScaleAbs(laplace, rest2, (sigma+1)*0.25);
 
         Laplacian(smoothed, laplace, CV_16S, 5);
         convertScaleAbs(laplace, result, (sigma+1)*0.25);
@@ -111,7 +97,7 @@ int main(int argc, const char * argv[]) {
         imshow("diff", diff);
 
         Mat threshold_output;
-//        vector<vector<Point> > contours;
+        vector<vector<Point> > contours;
         vector<Vec4i> hierarchy;
         
         /// Detect edges using Threshold
@@ -131,7 +117,7 @@ int main(int argc, const char * argv[]) {
         {
             approxPolyDP( Mat(contours[i]), contours_poly[i], 10, true );
             boundRect[i] = boundingRect( Mat(contours_poly[i]) );
-            //minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+            minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
         }
         
         mergeOverlappingBoxes(&boundRect, cusframe, &boundRectOut);
@@ -140,17 +126,12 @@ int main(int argc, const char * argv[]) {
         Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
         for( int i = 0; i< contours.size(); i++ )
         {
-
             /** @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
-//            double res = norm(boundRectOut[i].tl() - boundRectOut[i].br());//Euclidian distance
-//            if(boundRectOut[i].height > 45 && boundRectOut[i].width > 45) {
-//                rectangle( cusframe, boundRectOut[i].tl(), boundRectOut[i].br(), color, 2, 8, 0 );
-                rectangle( cusframe, boundRectOut[i].tl(), boundRectOut[i].br(), yellow, 3, 8, 0 );
-//            }
-//            if( (int)radius[i] > 50) {
-////                circle( cusframe, center[i], (int)radius[i], color, 2, 8, 0 );
-//                circle(cusframe, center[i], 3, color, 20, 2, 0);
-//            }
+            rectangle( cusframe, boundRectOut[i].tl(), boundRectOut[i].br(), yellow, 1, 8, 0 );
+            if( (int)radius[i] > 50) {
+//                circle( cusframe, center[i], (int)radius[i], blue, 1, 8, 0 );
+                circle(cusframe, center[i], 2, red, 4, 3, 0);
+            }
         }
 
         
@@ -161,7 +142,10 @@ int main(int argc, const char * argv[]) {
         imshow("cusframe", cusframe);
         int c = waitKey(1);
         if( c == ' ' )
+        {
             smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : GAUSSIAN;
+            if(verbose) printf("smoothType %d\n1.Gaussian 2. Blur 3. Median:\n", smoothType+1);
+        }
         if( c == 'q' || c == 'Q' || (c & 255) == 27 )
             break;
     }
