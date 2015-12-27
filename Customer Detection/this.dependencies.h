@@ -15,6 +15,9 @@ Scalar red = Scalar(0,0,255);
 Scalar blue = Scalar(255,0,0);
 Scalar purple(184, 114, 216);
 Scalar ade004(173,224,4);
+Scalar lightGREEN(102,255,102);
+Scalar lightORANGE(153,204,255);
+Scalar lightBLUE(255,204,153);
 
 bool verbose = false;
 
