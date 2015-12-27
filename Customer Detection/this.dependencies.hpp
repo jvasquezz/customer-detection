@@ -1,6 +1,8 @@
-#include <math.h>
-Mat diff;
+#ifndef DEPENDENCIES_HPP
+#define DEPENDENCIES_HPP
 
+#include "/Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h"
+#include <math.h>
 #include "opencv2/videoio/videoio.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -19,9 +21,9 @@ Scalar lightGREEN(102,255,102);
 Scalar lightORANGE(153,204,255);
 Scalar lightBLUE(255,204,153);
 
+extern Mat diff;
 
-
-bool verbose = false;
+extern bool verbose;
 
 /* Global variables */
 Mat src, erosion_dst, dilation_dst;
@@ -31,9 +33,9 @@ Mat templ;
 Mat result;
 
 
-Size size(720,720);//the dst image size,e.g.100x100
+//extern Size size;
 
-VideoCapture capture;
+extern VideoCapture cap;
 
 String VIDEOPATH = "/Users/drifter/Desktop/capstone/ver.mp4";
 const String BASEFRAME_DIR = "/Users/drifter/Dropbox/Feloh/Customer Detection/baseframe.png";
@@ -96,7 +98,7 @@ void encapsulate_objects( Mat *areaOI, Mat *BFRAME, int METHOD, int KSIZE, int S
 //void mergeOverlappingBoxes(std::vector<cv::Rect> &inputBoxes, cv::Mat &image, std::vector<cv::Rect> &outputBoxes);
 
 //vector<vector<Point> > contours;
-vector<Vec4i> hierarchy;
+//vector<Vec4i> hierarchy;
 
 /* For slider */
 const int alpha_slider_max = 100;
@@ -126,3 +128,5 @@ int match_method;
 int max_Trackbar = 5;
 char image_window[30] = "Source Image";
 char result_window[30] = "Result window";
+
+#endif

@@ -27,7 +27,7 @@
 		FE0EF9551C2C240C00B49547 /* ORmethods.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ORmethods.cpp; sourceTree = "<group>"; };
 		FE8465381C23440D00274A19 /* Customer Detection */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Customer Detection"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FE84653B1C23440D00274A19 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		FE8465421C234EE300274A19 /* this.dependencies.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = this.dependencies.h; sourceTree = "<group>"; };
+		FE8465421C234EE300274A19 /* this.dependencies.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = this.dependencies.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +61,7 @@
 			isa = PBXGroup;
 			children = (
 				FE84653B1C23440D00274A19 /* main.cpp */,
-				FE8465421C234EE300274A19 /* this.dependencies.h */,
+				FE8465421C234EE300274A19 /* this.dependencies.hpp */,
 				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
 			);
 			path = "Customer Detection";

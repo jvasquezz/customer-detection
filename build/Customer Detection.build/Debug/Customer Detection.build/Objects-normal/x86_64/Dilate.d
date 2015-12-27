@@ -1,6 +1,6 @@
 dependencies: \
-  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/main.cpp \
-  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/this.dependencies.hpp \
+  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/Dilate.cpp \
+  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/this.dependencies.h \
   /Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h \
   /usr/local/include/opencv/highgui.h \
   /usr/local/include/opencv2/core/core_c.h \

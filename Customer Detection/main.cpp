@@ -1,6 +1,8 @@
-#include "/Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h"
-#include "this.dependencies.h"
+#include "this.dependencies.hpp"
 
+/** Global vars */
+bool verbose = false;
+Mat diff;
 
 int main(int argc, const char * argv[]) {
     
@@ -42,14 +44,17 @@ int main(int argc, const char * argv[]) {
     
     Mat belt_print = baseframe(MOLD_CONVEYOR_BELT);
 
+    /**  @remarks main loop */
     for(;;) {
         cap >> frame;
-        
+        if (!frame.data)
+            return -1;
+            
         /**  @brief set areas of interest to scan for objects,  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
         customer_line = frame(MOLD_CUSTOMERLINE_WIDE);
         
-        /**  @function call
+        /**  @function @brief
         encapsulate_objects( Mat *areaOI, Mat *baseROI, int ObjectToDetect (0-2), int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE ) */
         encapsulate_objects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
         encapsulate_objects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
@@ -87,6 +92,7 @@ int main(int argc, const char * argv[]) {
     
     return 0;
 }
+
 
 /** @function encapsulate_objects */
 void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE ) {
@@ -152,10 +158,6 @@ void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int 
         }
         if (METHOD == OBJECT_ITEM) {
             rectangle( *areaOI, boundRectOut[i].tl(), boundRectOut[i].br(), lightBLUE, 1.5, 4, 0 );
-//            if( (int)radius[i] < 40) {
-//                circle( *areaOI, center[i], (int)radius[i], lightORANGE, 1, 8, 0 );
-//                //            circle(conveyorbelt, center[i], 2, red, 4, 3, 0);
-//            }
         }
     }
 }
@@ -217,7 +219,7 @@ void Dilation( int, void* )
     if( dilation_elem == 0 ){ dilation_type = MORPH_RECT; }
     else if( dilation_elem == 1 ){ dilation_type = MORPH_CROSS; }
     else if( dilation_elem == 2) { dilation_type = MORPH_ELLIPSE; }
-
+    
     Mat element = getStructuringElement( dilation_type, Size( 2*dilation_size + 1, 2*dilation_size+1 ), Point( dilation_size, dilation_size ) );
     /// Apply the dilation operation
     dilate( diff, diff, element );
