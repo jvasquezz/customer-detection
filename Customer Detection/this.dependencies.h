@@ -19,6 +19,8 @@ Scalar lightGREEN(102,255,102);
 Scalar lightORANGE(153,204,255);
 Scalar lightBLUE(255,204,153);
 
+
+
 bool verbose = false;
 
 /* Global variables */
@@ -63,6 +65,9 @@ int const max_operator = 4;
 //int const max_elem = 2;
 //int const max_kernel_size = 21;
 
+enum {GAUSSIAN, BLUR, MEDIAN};
+enum {OBJECT_ITEM, OBJECT_CUSTOMER};
+
 Mat aframe, baseframe;
 Mat cameraFeed;
 
@@ -85,7 +90,9 @@ void Morphology_Operations( int, void* );
 void on_trackbar( int, void* );
 void CannyThreshold(int, void*);
 void MatchingMethod( int, void* );
-void mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes);
+void mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
+void encapsulate_objects( Mat *areaOI, Mat *BFRAME, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE );
+
 //void mergeOverlappingBoxes(std::vector<cv::Rect> &inputBoxes, cv::Mat &image, std::vector<cv::Rect> &outputBoxes);
 
 //vector<vector<Point> > contours;
