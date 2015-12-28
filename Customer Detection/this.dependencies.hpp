@@ -2,26 +2,28 @@
 #define DEPENDENCIES_HPP
 
 #include "/Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h"
-#include <math.h>
-#include "opencv2/videoio/videoio.hpp"
-#include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
-#include <ctype.h>
-#include <stdio.h>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/videoio/videoio.hpp"
 #include <iostream>
+#include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+
+enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER};
+enum {OBJECT_ITEM, OBJECT_CUSTOMER};
 
 /** Function Headers (PROTOTYPES) */
-void encapsulate_objects( Mat *areaOI, Mat *BFRAME, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE );
-void mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
+void encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE/*MEDIAN*/);
+int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
 
-enum {GAUSSIAN, BLUR, MEDIAN};
-enum {OBJECT_ITEM, OBJECT_CUSTOMER};
 
 extern int sigma;
 extern int smoothType;
 extern int ksize;
 
 extern VideoCapture cap;
+extern String capstone_dir;
 
 extern Mat diff;
 extern int thresh;
@@ -34,7 +36,7 @@ extern Rect MOLD_CONVEYOR_BELT;
 extern Mat frame, baseframe, line_print, belt_print, customer_line;
 extern Mat smoothed, laplace, result;
 
-String VIDEOPATH = "/Users/drifter/Desktop/capstone/ver.mp4";
+const String VIDEOPATH = "/Users/drifter/Desktop/capstone/ver.mp4";
 const String BASEFRAME_DIR = "/Users/drifter/Dropbox/Feloh/Customer Detection/baseframe.png";
 
 /**  Scalar COLORS */
