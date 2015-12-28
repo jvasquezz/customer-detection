@@ -50,7 +50,7 @@ int main(int argc, const char * argv[]) {
         if (!frame.data)
             return -1;
             
-        /**  @brief set areas of interest to scan for objects,  */
+        /**  @brief set regions of interest (ROI) to scan for objects,  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
         customer_line = frame(MOLD_CUSTOMERLINE_WIDE);
         
@@ -96,14 +96,21 @@ int main(int argc, const char * argv[]) {
 
 /** @function encapsulate_objects */
 void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE ) {
+    Scalar COLOR;
     Mat currentgray, basegray, differs;
     cvtColor(*areaOI, currentgray, COLOR_BGR2GRAY);
     cvtColor(*baseROI, basegray, COLOR_BGR2GRAY);
 
     if (METHOD == OBJECT_CUSTOMER)
+    { /**  Substract from base image the current one, detects/shows people */
         differs = basegray - currentgray;
-    if (METHOD == OBJECT_ITEM)
+        COLOR = yellow;
+    }
+    else if (METHOD == OBJECT_ITEM)
+    {
         differs = currentgray - basegray;
+        COLOR = lightORANGE;
+    }
     differs = differs < 60;
     
     Mat smoothed, laplace, result;
@@ -114,6 +121,7 @@ void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int 
     else
         medianBlur(differs, smoothed, KSIZE);
 
+    /**  @brief Laplacian(InputArray src, OutputArray dst, int ddepth) */
     Laplacian(smoothed, laplace, CV_16S, 5);
     convertScaleAbs(laplace, result, (SIGMA+1)*0.25);
     
@@ -141,7 +149,7 @@ void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int 
     }
     
     /**   @brief merge overlapping boxes, 
-     @note might be better to use function to merge contained boxes only
+     @note might be better to use function to merge contained boxes only i.e
      @note A is a subset of B if every element of A is contained in B */
     mergeOverlappingBoxes(&boundRect, *areaOI, &boundRectOut, METHOD);
     
@@ -149,15 +157,11 @@ void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int 
     for( int i = 0; i< contours_eo.size(); i++ )
     {
         /** @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
-        if (METHOD == OBJECT_CUSTOMER) {
-            rectangle( *areaOI, boundRectOut[i].tl(), boundRectOut[i].br(), yellow, 1.5, 4, 0 );
-            if( (int)radius[i] > 50) {
-                //circle( customer_line, center[i], (int)radius[i], blue, 1, 8, 0 );
-                circle( *areaOI, center[i], 2, red, 4, 3, 0);
-            }
-        }
-        if (METHOD == OBJECT_ITEM) {
-            rectangle( *areaOI, boundRectOut[i].tl(), boundRectOut[i].br(), lightBLUE, 1.5, 4, 0 );
+        rectangle( *areaOI, boundRectOut[i].tl(), boundRectOut[i].br(), COLOR, 2.0, 4, 0 );
+
+        if( ((int)radius[i] > 50) && (METHOD == OBJECT_CUSTOMER) )
+        { //circle( *areaOI, center[i], (int)radius[i]/2, blue, 1, 8, 0 );
+            circle( *areaOI, center[i], 2, lightGREEN, 2, 8, 0);
         }
     }
 }
