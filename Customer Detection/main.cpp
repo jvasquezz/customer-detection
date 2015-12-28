@@ -2,13 +2,14 @@
 
 /** Global vars */
 bool verbose = false;
-Mat diff;
+Mat baseframe;
 
 int main(int argc, const char * argv[]) {
-    
+    /** Default values for @function encapsulate_objects */
     int sigma = 3;
     int smoothType = MEDIAN;
-    int ksize = (sigma*5)|1;
+    int ksize = (sigma*5)| 1;
+    
     // insert code here...
     VideoCapture cap;
 //    cap.open("/Users/drifter/Desktop/capstone/SEGMENTA_720P_20FPS.mp4");
@@ -19,13 +20,11 @@ int main(int argc, const char * argv[]) {
 //    cap.open("/Users/drifter/Desktop/capstone/1FPS.mp4");
 //    cap.open("/Users/drifter/Desktop/capstone/3FPS.mp4");
     cap.open("/Users/drifter/Desktop/capstone/10FPS.mp4");
-//    cframe = imread("/Users/drifter/Dropbox/Feloh/Customer Detection/frame.png",0);
+
     baseframe = imread(BASEFRAME_DIR);
-    //pyrDown(baseframe, baseframe);
+
     namedWindow( "Laplacian", 0 );
     
-    Mat smoothed, laplace, result;
-
     /**  mold: A hollow form or matrix for shaping a segment from a frame */
     /**  @constructor Rect
     Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
@@ -33,18 +32,12 @@ int main(int argc, const char * argv[]) {
     Rect MOLD_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
     Rect MOLD_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,120);
     
-    Mat frame, line_print, customer_line, tmplate;
-//    vector<vector<Point> > contours;
-    vector<Vec4i> hierarchy;
     int thresh = 100;
+    Mat line_print, belt_print, frame, customer_line;
     line_print = baseframe(MOLD_CUSTOMERLINE_WIDE);
-    Mat secBaseFrame, tempY;
-    cap >> tempY;
-    secBaseFrame = tempY(MOLD_CUSTOMERLINE_WIDE);
-    
-    Mat belt_print = baseframe(MOLD_CONVEYOR_BELT);
+    belt_print = baseframe(MOLD_CONVEYOR_BELT);
 
-    /**  @remarks main loop */
+    /**  @brief main loop */
     for(;;) {
         cap >> frame;
         if (!frame.data)
@@ -59,25 +52,11 @@ int main(int argc, const char * argv[]) {
         encapsulate_objects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
         encapsulate_objects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
         
-//        char trackbar_label[200] = "Method: \n 0: SQDIFF \n 1: SQDIFF NORMED \n 2: TM CCORR \n 3: TM CCORR NORMED \n 4: TM COEFF \n 5: TM COEFF NORMED";
-//        createTrackbar( trackbar_label, image_window, &match_method, max_Trackbar, MatchingMethod );
-        
-        createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );
-        createTrackbar( "Kernel size Erosion:\n 2n +1", "customer_line", &erosion_size, max_kernel_size, Erosion );
-        createTrackbar( "Kernel size Dilation:\n 2n +1", "customer_line", &dilation_size, max_kernel_size, Dilation );
-        /// Create Trackbar to select Morphology operation
-        createTrackbar("Operator:\n 0: Opening - 1: Closing \n 2: Gradient - 3: Top Hat \n 4: Black Hat", morph, &morph_operator, max_operator, Morphology_Operations );
-        /// Create Trackbar to select kernel type
-        createTrackbar( "Element:\n 0: Rect - 1: Cross - 2: Ellipse", morph, &morph_elem, max_elem,Morphology_Operations );
-        /// Create Trackbar to choose kernel size
-        createTrackbar( "Kernel size:\n 2n +1", morph, &morph_size, max_kernel_size, Morphology_Operations );
+        /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
+        createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );;
         
         if(verbose)
             printf("Sigma value %d\n", sigma);
-        
-        /// Default start
-        Erosion( 0, 0 );
-        Dilation( 0, 0 );
         
         imshow("customer_line", customer_line);
         int c = waitKey(1);
@@ -166,6 +145,7 @@ void encapsulate_objects( Mat *areaOI, Mat *baseROI, int METHOD, int KSIZE, int 
     }
 }
 
+
 /**  @function mergeOverlappingBoxes */
 void mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *outputBoxes, int MOCI/*(method object customer/item)*/)
 {
@@ -200,47 +180,3 @@ void mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *o
     }
 }
 
-/**  @function Erosion  */
-void Erosion( int, void* )
-{
-    int erosion_type;
-    if( erosion_elem == 0 ){ erosion_type = MORPH_RECT; }
-    else if( erosion_elem == 1 ){ erosion_type = MORPH_CROSS; }
-    else if( erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
-
-    Mat element = getStructuringElement( erosion_type, Size( 2*erosion_size + 1, 2*erosion_size+1 ), Point( erosion_size, erosion_size ) );
-
-    /// Apply the erosion operation
-    erode( diff, diff, element );
-    if(verbose)
-        imshow( "Erosion", diff );
-}
-
-/** @function Dilation */
-void Dilation( int, void* )
-{
-    int dilation_type;
-    if( dilation_elem == 0 ){ dilation_type = MORPH_RECT; }
-    else if( dilation_elem == 1 ){ dilation_type = MORPH_CROSS; }
-    else if( dilation_elem == 2) { dilation_type = MORPH_ELLIPSE; }
-    
-    Mat element = getStructuringElement( dilation_type, Size( 2*dilation_size + 1, 2*dilation_size+1 ), Point( dilation_size, dilation_size ) );
-    /// Apply the dilation operation
-    dilate( diff, diff, element );
-    if(verbose)
-        imshow( "Dilation", diff );
-}
-
-/**  @function Morphology_Operations */
-void Morphology_Operations( int, void* )
-{
-    // Since MORPH_X : 2,3,4,5 and 6
-    int operation = morph_operator + 2;
-
-    /* Make your own kernel mask */
-    Mat element = getStructuringElement( morph_elem, Size( 2*morph_size + 1, 2*morph_size+1 ), Point( morph_size, morph_size ) );
-
-    /// Apply the specified morphology operation
-    morphologyEx( diff, diff, operation, element );
-    imshow( morph, diff );
-}
