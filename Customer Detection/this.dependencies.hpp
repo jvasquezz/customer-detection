@@ -2,6 +2,10 @@
 #define DEPENDENCIES_HPP
 
 #include "/Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h"
+#include "/Users/drifter/Documents/opencv-3.0.0/modules/features2d/include/opencv2/features2d.hpp"
+#include "/Users/drifter/Dropbox/Feloh/documents-export-2015-12-01/Software/V1/jacob-ppl-carts/include/opencv2/nonfree/features2d.hpp"
+//#include "opencv2/features2d/features2d.hpp"
+//#include "opencv2/nonfree/features2d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/videoio/videoio.hpp"
@@ -14,7 +18,8 @@ enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER};
 enum {OBJECT_ITEM, OBJECT_CUSTOMER};
 
 /** Function Headers (PROTOTYPES) */
-void encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE/*MEDIAN*/);
+//void encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE );
+vector<Mat> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE/*MEDIAN*/);
 int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
 
 
@@ -39,16 +44,18 @@ extern Mat smoothed, laplace, result;
 const String VIDEOPATH = "/Users/drifter/Desktop/capstone/ver.mp4";
 const String BASEFRAME_DIR = "/Users/drifter/Dropbox/Feloh/Customer Detection/baseframe.png";
 
+
 /**  Scalar COLORS */
-Scalar yellow = Scalar(0,255,255);
-Scalar green = Scalar(0,255,0);
-Scalar red = Scalar(0,0,255);
-Scalar blue = Scalar(255,0,0);
-Scalar purple(184, 114, 216);
-Scalar ade004(173,224,4);
-Scalar lightGREEN(102,255,102);
-Scalar lightORANGE(153,204,255);
-Scalar lightBLUE(255,204,153);
+Scalar paint_yellow = Scalar(0,255,255);
+Scalar paint_green = Scalar(0,255,0);
+Scalar paint_red = Scalar(0,0,255);
+Scalar paint_blue = Scalar(255,0,0);
+Scalar paint_purple(184, 114, 216);
+Scalar paint_ade004(173,224,4);
+Scalar paint_lightGREEN(102,255,102);
+Scalar paint_lightORANGE(153,204,255);
+Scalar paint_lightBLUE(255,204,153);
 Scalar WHITE(255,255,255);
+extern Scalar stain[10];
 
 #endif
