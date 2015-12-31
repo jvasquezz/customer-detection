@@ -41,4 +41,11 @@ dependencies: \
   /usr/local/include/opencv2/videoio.hpp \
   /usr/local/include/opencv2/imgproc/imgproc.hpp \
   /usr/local/include/opencv2/imgproc.hpp \
+  /Users/drifter/Documents/opencv-3.0.0/modules/features2d/include/opencv2/features2d.hpp \
+  /usr/local/include/opencv2/flann/miniflann.hpp \
+  /usr/local/include/opencv2/flann/defines.h \
+  /usr/local/include/opencv2/flann/config.h \
+  /Users/drifter/Dropbox/Feloh/documents-export-2015-12-01/Software/V1/jacob-ppl-carts/include/opencv2/nonfree/features2d.hpp \
+  /usr/local/include/opencv2/features2d/features2d.hpp \
+  /usr/local/include/opencv2/features2d.hpp \
   /usr/local/include/opencv2/videoio/videoio.hpp

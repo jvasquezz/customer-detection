@@ -130,48 +130,45 @@ Scalar stain[10];
 vector<Point2d> c;
 int iota = 0;
 int mu = 0;
+bool verbose2 = false;
 
 class Customer
 {
 public:
     int id;
     vector<MatND> histog;
+    vector<Point2d> position;
     double time_introduced;
     double last_recorded_time;
 };
 
 vector<Customer> customer;
 
-void instantiate_newCustomers( MatND* newHistogram )
+void instantiate_newCustomers( Customer newCustomer )
 {
-    Customer tmp;
-    tmp.id = mu;
-    tmp.histog.push_back(*newHistogram);
-    customer.push_back(tmp);
+    newCustomer.id = mu;
+    customer.push_back(newCustomer);
     mu++;
 }
 
-void instantiate_newCustomers( vector<MatND>* vec_histograms )
+void instantiate_newCustomers( vector<Customer> vecCustomer )
 {
-    for (int each = 0; each < vec_histograms->size(); each++ ) {
-        
-        Customer tmp;
-        tmp.id = mu;
-        tmp.histog.push_back(vec_histograms->at(each));
-        customer.push_back(tmp);
-        mu++;
+    for (int each = 0; each < vecCustomer.size(); each++ )
+    {
+        instantiate_newCustomers(vecCustomer[each]);
     }
 }
 
 /**  @function CalcHistogram of given image */
-void CalcHistogram( vector<MatND>* destination, vector<Mat> originals )
+void CalcHistogram( vector<Customer>* destination, vector<Customer> originals )
 {
 
     for (int i = 0; i < originals.size(); i++) {
         Mat hsv_histogram;
         
+        int pos_last_histogram = (int)originals[i].histog.size() - 1;
         /// Convert to HSV
-        cvtColor(originals[i], hsv_histogram, COLOR_BGR2HSV);
+        cvtColor(originals[i].histog[pos_last_histogram], hsv_histogram, COLOR_BGR2HSV);
         
         /// Using 50 bins for hue and 60 for saturation
         int h_bins = 50; int s_bins = 60;
@@ -187,64 +184,62 @@ void CalcHistogram( vector<MatND>* destination, vector<Mat> originals )
         int channels[] = { 0, 1 };
         
         /// Histograms
-        MatND HIST_CONVERT;
-        
-        /// Calculate the histograms for the HSV images
-        calcHist( &hsv_histogram, 1, channels, Mat(), HIST_CONVERT, 2, histSize, ranges, true, false );
-        normalize( HIST_CONVERT, HIST_CONVERT, 0, 1, NORM_MINMAX, -1, Mat() );
+        Customer HIST_CONVERT;
 
+        MatND placeholdMatND;
+        HIST_CONVERT.id = originals[i].id;
+        HIST_CONVERT.position = originals[i].position;
+        /// Calculate the histograms for the HSV images
+        calcHist( &hsv_histogram, 1, channels, Mat(), placeholdMatND, 2, histSize, ranges, true, false );
+        HIST_CONVERT.histog.push_back(placeholdMatND);
+        normalize( HIST_CONVERT.histog.back(), HIST_CONVERT.histog.back(), 0, 1, NORM_MINMAX, -1, Mat() );
+
+        
         destination->push_back(HIST_CONVERT);
     }
 }
 
-void CompareHistogram ( vector<MatND> kappa )
+void CompareHistogram ( vector<Customer> kappa )
 {
-
+    int sav = -1;
+    if (customer.size() == 0 )
+        instantiate_newCustomers(kappa);
+    
+    int TAU = (int)customer.size();
+    double customer_kappa = 0.0, customer_kappa2 = 0.0;
     for (int i = 0; i < kappa.size(); i++)
     {
-        double customer_kappa = 0.0;
-        for ( int k = 0; k < customer.size(); k++ )
+        customer_kappa = 0.0;
+        customer_kappa2 = 0.0;
+        for ( int k = 0; k < TAU; k++ )
         {
-            int pos_last_histogram = (int)customer[i].histog.size() - 1;
-            if (compareHist(customer[k].histog[pos_last_histogram], kappa[i], CV_COMP_CORREL) > .95)
+            cout << customer_kappa << "\n------------------------------------\n";
+            if ( customer_kappa < compareHist(kappa[i].histog.back(), customer[k].histog.back(), CV_COMP_INTERSECT))
             {
-                customer_kappa = compareHist(customer[i].histog[pos_last_histogram], kappa[k], CV_COMP_CORREL);
-                customer[k].histog.push_back(kappa[i]);
-                break;
+                customer_kappa = compareHist(kappa[i].histog.back(), customer[k].histog.back(), CV_COMP_INTERSECT);
+                sav = k;
             }
-        }
-        if (customer_kappa < .95)
-        {
-            instantiate_newCustomers(&kappa[i]);
-        }      
-    }
-    
-//    double epsilon_iota = 0.0;
-//    cout << "Beginning comparison of histogram with new set of objects\n\n";
-//    /// Apply the histogram comparison methods
-//    for( int i = 0; i < kappa.size(); i++ )
-//    {
-//        cout << "Start i = kappa[" << i << "]\n\n";
-//        for ( int k = 0; k < gamma.size(); k++ )
-//        {
-//            if (epsilon_iota < compareHist(kappa[i], gamma[k], CV_COMP_CORREL)) {
-//                
-//                epsilon_iota = compareHist(kappa[i], gamma[k], CV_COMP_CORREL);
-//            }
-////            cout << "vs k = kappa[" << k << "]\n";
-////            for (int lambda = 0; lambda < 4; lambda ++)
-////            {
-////                int compare_method = lambda;
-////                double epsilon_iota = compareHist( kappa[i], gamma[k], compare_method );
-////                cout << "Method " << compare_method << ": " << epsilon_iota;
-////                cout << '\n';
-////            }
-//            cout << "\n";
-//        }
-//        cout << "\n";
-//    }
+        } /* end inner loop */
 
-}
+        double euclidean_dist = norm(customer[sav].position.back() - kappa[i].position.back());
+        if (customer_kappa > 10 && euclidean_dist < 500 )
+        {
+            customer[sav].histog.push_back(kappa[i].histog.back());
+            customer[sav].position.push_back(kappa[i].position.back());
+        }
+        else if ( euclidean_dist < 250 )
+        {
+            ;
+        }
+        else
+        {
+            Customer tempKap = kappa[i];
+            instantiate_newCustomers(tempKap);
+        }
+        
+    } /* end outer loop */
+    
+} /*end CompareHistogram */
 
 
 
@@ -280,7 +275,7 @@ int main(int argc, const char * argv[]) {
     
     int thresh = 100;
     Mat line_print, belt_print, frame, customer_line;
-    line_print = baseframe(MOLD_CUSTOMERLINE_WIDE);
+    line_print = baseframe(MOLD_CUSTOMERLINE);
     belt_print = baseframe(MOLD_CONVEYOR_BELT);
 
     line_print.copyTo(sketchMat);
@@ -297,9 +292,9 @@ int main(int argc, const char * argv[]) {
     
     /**  @brief main loop */
     for(;;) {
-//        for(int i = 0; i < 3; i++) {
-//            cap >> frame;
-//        }
+        for(int i = 0; i < 3; i++) {
+            cap >> frame;
+        }
         cap >> frame;
         if (!frame.data)
             return -1;
@@ -307,24 +302,32 @@ int main(int argc, const char * argv[]) {
         
         /**  @brief set regions of interest (ROI) to scan for objects,  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
-        customer_line = frame(MOLD_CUSTOMERLINE_WIDE);
+        customer_line = frame(MOLD_CUSTOMERLINE);
         customer_line.copyTo(untouch_frame);
+        Mat displays = frame(MOLD_CUSTOMERLINE_WIDE);
         
         /**  @function @brief
          encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE)*/
         encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
-        vector<Mat> customersDetected = encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
+        vector<Customer> customersDetected = encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
         
-        vector<MatND> vec_histograms;
-        CalcHistogram( &vec_histograms, customersDetected );
+        vector<Customer> vec_customers;
+        CalcHistogram( &vec_customers, customersDetected );
         
         
-        
-        if (past_vHistograms.size()) { /**  @note if there are objects detected in previous frame */
-            CompareHistogram( vec_histograms );
-        } else {
-            instantiate_newCustomers( &vec_histograms );
+        if (vec_customers.size()) { /**  @note if there are customers already detected */
+            CompareHistogram( vec_customers );
         }
+//        } else {
+//            instantiate_newCustomers( vec_customers );
+//        }
+        
+        for (int i = 0; i < customer.size(); i++) {
+            char identifier[100];
+            sprintf(identifier, "C%d", customer[i].id);
+            putText(customer_line, identifier, customer[i].position.back(), 3, 1, WHITE, 1.5, 40);
+        }
+        
         
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
         createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );;
@@ -332,8 +335,10 @@ int main(int argc, const char * argv[]) {
         if(verbose)
             printf("Sigma value %d\n", sigma);
         
-        imshow("customer_line", customer_line);
-        imshow("sketchMat", sketchMat);
+//        imshow("customer_line", customer_line);
+        imshow("customer_line", displays);
+        if (verbose2)
+            imshow("sketchMat", sketchMat);
         
         int c = waitKey(1);
         if( c == ' ' )
@@ -345,7 +350,6 @@ int main(int argc, const char * argv[]) {
         if( c == 'q' || c == 'Q' || (c & 255) == 27 )
             break;
         
-        past_vHistograms.swap( vec_histograms );
     }   /*end main loop */
     
     return 0;
@@ -354,7 +358,7 @@ int main(int argc, const char * argv[]) {
 
 /***  @function encapsulateObjects
          @return array of croppedObjects i.e customers, other objects */
-vector<Mat> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )
+vector<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )
 {
     Scalar COLOR;
     Mat currentgray, basegray, differs;
@@ -425,13 +429,13 @@ vector<Mat> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int 
     int overlapContours_size = mergeOverlappingBoxes(&boundRect, *instanceROI, &boundRectOut, METHOD);
     
 
-    vector<Mat> croppedObject;
-    
+    vector<Customer> croppedObject;
+    Rect r;
     /**  Draw polygonal contour + bonding rects + circles */
     for( int i = 0; i< overlapContours_size/*contours_eo.size()*/; i++ )
     {
 //        matchTemplate(untouch_frame, croppedObject[i], result, CV_TM_CCOEFF_NORMED);
-        
+        Customer tmp;
         /**  @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
         rectangle( *instanceROI, boundRectOut[i].tl(), boundRectOut[i].br(), COLOR, 2.0, 4, 0 );
 
@@ -439,18 +443,23 @@ vector<Mat> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int 
         if (METHOD == OBJECT_CUSTOMER)
         {
             /**  @brief c center of rectangle, saves coordinates */
-            Rect r(boundRectOut[i]);
+            r = Rect(boundRectOut[i]);
             c.push_back(Point2d(r.x + r.width / 2, r.y + r.height / 2));
             // c is center of rect
-            char coordi[500];
+            char coordi[100];
             /**  @brief coordinates on base 5 */
             sprintf(coordi, "[%d,%d]", (int)(100*c[i].x)/1000, (int)(100*c[i].y)/1000);
-            putText(*instanceROI, "Party123586", c[i], 6, .5, WHITE);
-//            putText(*instanceROI, coordi, c[i], 6, .5, WHITE);
+            putText(*instanceROI, coordi, c[i], 6, .5, WHITE);
+
         }
-        
-        croppedObject.push_back( untouch_frame(boundRectOut[i]) );
+        tmp.histog.push_back(untouch_frame(boundRectOut[i]));
+        tmp.position.push_back(Point2d(r.x + r.width / 2, r.y + r.height / 2));
+        croppedObject.push_back(tmp);
+
     }
+//    croppedObject[i].histog.push_back( untouch_frame(boundRectOut[i]) );
+//    croppedObject[i].position.push_back(Point2d(r.x + r.width / 2, r.y + r.height / 2));
+    
     
     
 //    double distanceArray[overlapContours_size];
@@ -483,27 +492,12 @@ vector<Mat> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int 
             }
             
             
-//            if ( iota++  > 3 ) {
-//                iota = 0;
-                for (int i = 0; i < overlapContours_size; i++ )
-                {
-                    //                cout << "lines drawn " << i;
-                    line(sketchMat, a[i], b[i], stain[i], 2, 4);
-                }
-//            }
+            for (int i = 0; i < overlapContours_size; i++ )
+            {
+                line(sketchMat, a[i], b[i], stain[i], 2, 4);
+            }
         }
     }
-    
-
-    
-//                distanceArray[i] = norm( prevPoints[i]-c[i] );
-//                if ( distanceArray[tmp] > distanceArray[i] )
-//                    tmp  = i;
-//                prevPoints[i]
-//            }
-//            prevPoints[i]
-//    }
-    
     
     
     /**  @brief distance between points */
@@ -602,7 +596,9 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         rectangle(mask, box, Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
     }
     
-    imshow("Amask", mask);
+
+    if (verbose2)
+        imshow("Amask", mask);
     vector<vector<Point>> contoursOverlap;
     /**  @brief Find contours in mask
      If bounding boxes overlap, they will be joined by this function call */

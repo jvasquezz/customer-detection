@@ -66,28 +66,12 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Customer Detection/main.cpp"
-            timestampString = "473184917.219582"
+            timestampString = "473206538.244948"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "402"
-            endingLineNumber = "402"
+            startingLineNumber = "472"
+            endingLineNumber = "472"
             landmarkName = "encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Customer Detection/main.cpp"
-            timestampString = "473189082.196085"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "218"
-            endingLineNumber = "218"
-            landmarkName = "CompareHistogram ( vector&lt;MatND&gt; kappa )"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
