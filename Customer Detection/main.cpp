@@ -1,125 +1,10 @@
-////*******************surf.cpp******************//
-////********** SURF implementation in OpenCV*****//
-////**loads video from webcam, grabs frames computes SURF keypoints and descriptors**//  //** and marks them**//
-//
-////****author: achu_wilson@rediffmail.com****//
-//#include "this.dependencies.hpp"
-//#include "opencv2/xfeatures2d.hpp"
-//
-////#include "opencv2/legacy/legacy.hpp"
-//
-//int main() {
-//    Mat image1, outImg1, image2, outImg2;
-//    VideoCapture cap;
-//    cap.open(0);
-//    
-//    // vector of keypoints
-//    vector<KeyPoint> keypoints1, keypoints2;
-//    
-//    cap >> image1;
-//    cap >> image2;
-//    // Read input images
-////    image1 = imread("C://Google-Logo.jpg",0);
-////    image2 = imread("C://Alex_Eng.jpg",0);
-//    
-//    SurfFeatureDetector surf(2500);
-//    surf.detect(image1, keypoints1);
-//    surf.detect(image2, keypoints2);
-//    drawKeypoints(image1, keypoints1, outImg1, Scalar(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-//    drawKeypoints(image2, keypoints2, outImg2, Scalar(255,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-//    
-//    namedWindow("SURF detector img1");
-//    imshow("SURF detector img1", outImg1);
-//    
-//    namedWindow("SURF detector img2");
-//    imshow("SURF detector img2", outImg2);
-//    
-//    SurfDescriptorExtractor surfDesc;
-//    Mat descriptors1, descriptors2;
-//    surfDesc.compute(image1, keypoints1, descriptors1);
-//    surfDesc.compute(image2, keypoints2, descriptors2);
-//    
-////    BFMatcher<L2<float>> matcher;
-//    BFMatcher matcher;
-////    BruteForceMatcher<L2<float>> matcher;
-//    vector<DMatch> matches;
-//    matcher.match(descriptors1,descriptors2, matches);
-//    
-//    nth_element(matches.begin(), matches.begin()+24, matches.end());
-//    matches.erase(matches.begin()+25, matches.end());
-//    
-//    Mat imageMatches;
-//    drawMatches(image1, keypoints1, image2, keypoints2, matches, imageMatches, Scalar(255,255,255));
-//    
-//    namedWindow("Matched");
-//    imshow("Matched", imageMatches);
-//    
-//    cv::waitKey(0);
-//    return 0;
-//    
-//}
-
-
-////#include <stdio.h>
-////#include "opencv2/features2d/features2d.hpp"
-////#include "opencv2/highgui/highgui.hpp"
-////#include "opencv2/imgproc/imgproc_c.h"
-//
-//using namespace std;
-//int main(int argc, char** argv)
-//{
-//    CvMemStorage* storage = cvCreateMemStorage(0);
-//    cvNamedWindow("Image", 1);
-//    int key = 0;
-//    static CvScalar red_color[] ={0,0,255};
-//    CvCapture* capture = cvCreateCameraCapture(0);
-//    CvMat* prevgray = 0, *image = 0, *gray =0;
-//    while( key != 'q' )
-//    {
-//        int firstFrame = gray == 0;
-//        IplImage* frame = cvQueryFrame(capture);
-//        if(!frame)
-//            break;
-//        if(!gray)
-//        {
-//            image = cvCreateMat(frame->height, frame->width, CV_8UC1);
-//        }
-//        //Convert the RGB image obtained from camera into Grayscale
-//        cvCvtColor(frame, image, CV_BGR2GRAY);
-//        //Define sequence for storing surf keypoints and descriptors
-//        CvSeq *imageKeypoints = 0, *imageDescriptors = 0;
-//        int i;
-//        
-//        //Extract SURF points by initializing parameters
-//        CvSURFParams params = cvSURFParams(500, 1);
-//        cvExtractSURF( image, 0, &imageKeypoints, &imageDescriptors, storage, params );
-//        printf("Image Descriptors: %d\n", imageDescriptors->total);
-//        
-//        //draw the keypoints on the captured frame
-//        for( i = 0; i < imageKeypoints->total; i++ )
-//        {
-//            CvSURFPoint* r = (CvSURFPoint*)cvGetSeqElem( imageKeypoints, i );
-//            CvPoint center;
-//            int radius;
-//            center.x = cvRound(r->pt.x);
-//            center.y = cvRound(r->pt.y);
-//            radius = cvRound(r->size*1.2/9.*2);
-//            cvCircle( frame, center, radius, red_color[0], 1, 8, 0 );
-//        }
-//        cvShowImage( "Image", frame );
-//        
-//        cvWaitKey(30);
-//    }
-//    cvDestroyWindow("Image");
-//    return 0;
-//}
-
-
 
 #include "this.dependencies.hpp"
 
 /** Global variables */
-bool verbose = false;
+bool verbose = true;
+bool verbose2 = false;
+
 Mat baseframe;
 Mat untouch_frame;
 Mat last_template;// = Mat(1,1, CV_64F, 0.0);
@@ -130,7 +15,7 @@ Scalar stain[10];
 vector<Point2d> c;
 int iota = 0;
 int mu = 0;
-bool verbose2 = false;
+const int LINE_OBJ_CREATION[2] = {110, 107} ;
 
 class Customer
 {
@@ -159,7 +44,8 @@ void instantiate_newCustomers( vector<Customer> vecCustomer )
     }
 }
 
-/**  @function CalcHistogram of given image */
+/**  @function CalcHistogram of given image 
+ @brief returns the histograms of a given array of images (Mats)*/
 void CalcHistogram( vector<Customer>* destination, vector<Customer> originals )
 {
 
@@ -201,44 +87,79 @@ void CalcHistogram( vector<Customer>* destination, vector<Customer> originals )
 
 void CompareHistogram ( vector<Customer> kappa )
 {
-    int sav = -1;
-    if (customer.size() == 0 )
-        instantiate_newCustomers(kappa);
+    if (customer.size() == 0)
+    {
+        if ((int)(100*kappa.back().position.back().x)/1000 < LINE_OBJ_CREATION[0]
+            && (int)(100*kappa.back().position.back().x)/1000 > LINE_OBJ_CREATION[1])
+        {
+            cout << kappa.back().position.back().x << " KAPA opsition when object is created \n\n";
+            instantiate_newCustomers(kappa.back());
+        }
+        else
+        {
+            return;
+        }
+    }
     
+    int sav = -1;
     int TAU = (int)customer.size();
-    double customer_kappa = 0.0, customer_kappa2 = 0.0;
+    double customer_kappa = 0.0;
+    int manytopop = 0;
     for (int i = 0; i < kappa.size(); i++)
     {
-        customer_kappa = 0.0;
-        customer_kappa2 = 0.0;
+        customer_kappa = 10000;
+        double correl_histogram = 0.0;
         for ( int k = 0; k < TAU; k++ )
         {
-            cout << customer_kappa << "\n------------------------------------\n";
-            if ( customer_kappa < compareHist(kappa[i].histog.back(), customer[k].histog.back(), CV_COMP_INTERSECT))
+            if (customer_kappa > norm(customer[k].position.back() - kappa[i].position.back()))
             {
-                customer_kappa = compareHist(kappa[i].histog.back(), customer[k].histog.back(), CV_COMP_INTERSECT);
+                correl_histogram = compareHist(customer[k].histog.back(), kappa[i].histog.back(), CV_COMP_CORREL);
+                customer_kappa = norm(customer[k].position.back() - kappa[i].position.back());
                 sav = k;
-            }
+            } /* end if */
         } /* end inner loop */
+        
 
-        double euclidean_dist = norm(customer[sav].position.back() - kappa[i].position.back());
-        if (customer_kappa > 10 && euclidean_dist < 500 )
+        /**  @brief object creation */
+        if ((int)(100*kappa[i].position.back().x)/1000 < LINE_OBJ_CREATION[0]
+            && (int)(100*kappa[i].position.back().x)/1000 > LINE_OBJ_CREATION[1]
+            && correl_histogram < .8)
+        {
+            instantiate_newCustomers(kappa[i]);
+        }
+        else if ((int)(100*kappa[i].position.back().x)/1000 > 30)
         {
             customer[sav].histog.push_back(kappa[i].histog.back());
             customer[sav].position.push_back(kappa[i].position.back());
         }
-        else if ( euclidean_dist < 250 )
-        {
-            ;
-        }
-        else
-        {
-            Customer tempKap = kappa[i];
-            instantiate_newCustomers(tempKap);
-        }
+        
+//        double euclidean_dist = norm(customer[sav].position.back() - kappa[i].position.back());
+//        if (customer_kappa > .8 && euclidean_dist < 300 )
+//        {
+//            customer[sav].histog.push_back(kappa[i].histog.back());
+//            customer[sav].position.push_back(kappa[i].position.back());
+//        }
+//        else if ( euclidean_dist < 150 )
+//        {
+//            customer[sav].histog.push_back(kappa[i].histog.back());
+//            customer[sav].position.push_back(kappa[i].position.back());
+//        }
+//        else if ((int)(100*kappa[i].position.back().x)/1000 < 110)
+//        {
+//            cout << kappa[i].position.back().x << " KAPA opsition when object is created \n\n";
+//            Customer tempKap = kappa[i];
+//            instantiate_newCustomers(tempKap);
+//        }
         
     } /* end outer loop */
+    if (manytopop) {;
+//        customer.pop_back();
+    }
+//    for (int i = 0; i < manytopop; i++) {
     
+//    }
+
+
 } /*end CompareHistogram */
 
 
@@ -254,7 +175,7 @@ int main(int argc, const char * argv[]) {
     // insert code here...
     VideoCapture cap;
     String capstone_dir = "/Users/drifter/Desktop/capstone/";
-    cap.open(capstone_dir+"SEGMENTA_720P_20FPS.mp4");
+    cap.open(capstone_dir+"10FPS.mp4");
     /** more vid files:
      @a SEGMENTA_720P_20FPS.mp4
      @b 10FPS.mp4
@@ -292,13 +213,41 @@ int main(int argc, const char * argv[]) {
     
     /**  @brief main loop */
     for(;;) {
-        for(int i = 0; i < 3; i++) {
-            cap >> frame;
-        }
+//        for(int i = 0; i < 2; i++) {
+//            cap >> frame;
+//        }
         cap >> frame;
         if (!frame.data)
             return -1;
         
+//
+////        Mat mask;
+//        Mat mask = Mat::zeros( frame.rows, frame.cols, CV_8UC1 );
+//        inRange(frame, paint_red, Scalar(127,127,255), mask);
+//
+//        imshow("mask2", mask);
+////        Mat transparent;
+////        copy(frame, transparent, mask);
+////
+////        imshow("transparent", transparent);
+////        
+//        Vec3b colorRef(255,0,0); // for ''pure'' blue
+//        Vec3b paint_RED(0,0,255);
+//
+//        for (int i = 0; i < frame.rows; i++ )
+//        {
+//            for (int k = 0; k < frame.cols; k++ )
+//            {
+//                if(frame.at<Vec3b>(Point(k,i)) == paint_RED)
+////                if(frame.at<Scalar>(k,i) < frame.at<Scalar>(k,i))
+//                {
+//                    mask.at<Vec3b>(Point(k,i)) = Vec3b(255,255,255);
+//                }
+//            }
+//        }
+//
+//        imshow("mask", mask);
+//        
         
         /**  @brief set regions of interest (ROI) to scan for objects,  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
@@ -315,14 +264,13 @@ int main(int argc, const char * argv[]) {
         CalcHistogram( &vec_customers, customersDetected );
         
         
-        if (vec_customers.size()) { /**  @note if there are customers already detected */
+        if (vec_customers.size())  /**  @note if there are customers already detected */
+        {
             CompareHistogram( vec_customers );
         }
-//        } else {
-//            instantiate_newCustomers( vec_customers );
-//        }
         
-        for (int i = 0; i < customer.size(); i++) {
+        for (int i = 0; i < customer.size(); i++)  /**  @note puts labels on Customer */
+        {
             char identifier[100];
             sprintf(identifier, "C%d", customer[i].id);
             putText(customer_line, identifier, customer[i].position.back(), 3, 1, WHITE, 1.5, 40);
@@ -377,6 +325,10 @@ vector<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD,
     }
     differs = differs < 60;
     
+    if(verbose2)
+        imshow("differs39", differs);
+    
+    
     Mat smoothed, laplace, result;
     if(SMOOTHTYPE == MEDIAN)
         medianBlur(differs, smoothed, KSIZE);
@@ -392,7 +344,9 @@ vector<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD,
     /**  @brief Laplacian(InputArray src, OutputArray dst, int ddepth) */
     Laplacian(smoothed, laplace, CV_16S, 5);
     convertScaleAbs(laplace, result, (SIGMA+1)*0.25);
-    
+
+    if(verbose2)
+        imshow("result@#3", result);
     Mat threshold_output;
     vector<vector<Point> > contours_eo;
     vector<Vec4i> hierarchy;
@@ -580,17 +534,16 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
     Size scaleFactor(-10,-10); // To expand rectangles, i.e. increase sensitivity to nearby rectangles --can be anything
     for (int i = 0; i < inputBoxes->size(); i++)
     {
-        double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
+//        double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
         /**  @brief filter boxes, ignore too small or big boxes */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
-                if((inputBoxes->at(i).height < 45 || inputBoxes->at(i).width < 45)
-                   || euclianPointDistance < 35 || euclianPointDistance > 600)
+                if((inputBoxes->at(i).height * inputBoxes->at(i).width) < 35000)
                     continue;
                 break;
             case OBJECT_ITEM:
                 break;
-        }
+        } /**  end switch */
 
         Rect box = inputBoxes->at(i) + scaleFactor;
         rectangle(mask, box, Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
