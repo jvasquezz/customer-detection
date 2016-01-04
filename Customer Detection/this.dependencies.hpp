@@ -19,10 +19,13 @@ enum {OBJECT_ITEM, OBJECT_CUSTOMER};
 
 /** Function Headers (PROTOTYPES) */
 class Customer;
-//void encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE );
+void customerList_add( Customer ttcustomer);
+unsigned int customerList_add(deque<Customer> ttcustomers);
+void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer);
 deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE/*MEDIAN*/);
 int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
 
+extern deque<Customer> track_customer;
 
 extern int sigma;
 extern int smoothType;
