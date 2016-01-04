@@ -1,21 +1,25 @@
 
 #include "this.dependencies.hpp"
+#include <array>
 
 /** Global variables */
-bool verbose = true;
+bool verbose = false;
 bool verbose2 = false;
+bool flag = true;
 
 Mat baseframe;
 Mat untouch_frame;
 Mat last_template;// = Mat(1,1, CV_64F, 0.0);
-int flag = 1;
+
 Mat sketchMat;
 vector<Point2d> prevPoints;
 Scalar stain[10];
 vector<Point2d> c;
 int iota = 0;
 int mu = 0;
-const int LINE_OBJ_CREATION[2] = {110, 107} ;
+/**
+ const int LINE_OBJ_CREATION[2] = {11, 10};
+ */
 
 class Customer
 {
@@ -28,6 +32,16 @@ public:
 };
 
 vector<Customer> customer;
+vector<Customer> not_tracked_customer;
+
+/**  @brief allocate_newlyDetected instantiates newly detected objects */
+void allocate_newlyDetected( Customer ntcustomer)
+{
+//    for (int ncust = 0; ncust < ntcustomer.size(); ncust++)
+//    {
+        not_tracked_customer.push_back(ntcustomer);
+//    }
+}
 
 void instantiate_newCustomers( Customer newCustomer )
 {
@@ -85,82 +99,144 @@ void CalcHistogram( vector<Customer>* destination, vector<Customer> originals )
     }
 }
 
-void CompareHistogram ( vector<Customer> kappa )
+
+
+/**  @function linkCustomers will push new customer into its respective already IDed customer. If new, then create new customer */
+void linkCustomers(vector<Customer> new_customers, vector<Customer> customers)
 {
-    if (customer.size() == 0)
+    /** @brief not yet initialized list of customers */
+    if (!customers.size() && new_customers.size())
     {
-        if ((int)(100*kappa.back().position.back().x)/1000 < LINE_OBJ_CREATION[0]
-            && (int)(100*kappa.back().position.back().x)/1000 > LINE_OBJ_CREATION[1])
-        {
-            cout << kappa.back().position.back().x << " KAPA opsition when object is created \n\n";
-            instantiate_newCustomers(kappa.back());
-        }
-        else
-        {
-            return;
-        }
+        allocate_newlyDetected(new_customers[0]);
+        return;
     }
     
-    int sav = -1;
-    int TAU = (int)customer.size();
-    double customer_kappa = 0.0;
-    int manytopop = 0;
-    for (int i = 0; i < kappa.size(); i++)
+    /**  @brief when same number of customers detected */
+    double distance_obj_to_obj;
+    vector<int> linker_customer_index(new_customers.size());
+    /**  @start finding each object detected to all the customers in the arraylist of Customers */
+    for (int cust = 0; cust < customers.size(); cust++)
     {
-        customer_kappa = 10000;
-        double correl_histogram = 0.0;
-        for ( int k = 0; k < TAU; k++ )
+        /**  @note push back new data into customer which is closest i.e. customer pos to newlydetectedobject pos in frame coordinate */
+        distance_obj_to_obj = 1000;
+        for (int nfound = 0; nfound < new_customers.size(); nfound++)
         {
-            if (customer_kappa > norm(customer[k].position.back() - kappa[i].position.back()))
+            if (norm(customers[cust].position.back() - new_customers[nfound].position.back()) < distance_obj_to_obj)
             {
-                correl_histogram = compareHist(customer[k].histog.back(), kappa[i].histog.back(), CV_COMP_CORREL);
-                customer_kappa = norm(customer[k].position.back() - kappa[i].position.back());
-                sav = k;
-            } /* end if */
-        } /* end inner loop */
-        
+                /** save index with smallest distance from prev and current list of customers */
+                distance_obj_to_obj = norm(customers[cust].position.back() - new_customers[nfound].position.back());
+                linker_customer_index[cust] = nfound;   ///gets the index of new_customer corresponding to index to customer list
+            }
+        } ///end inner for
+    } ///end outer for
 
-        /**  @brief object creation */
-        if ((int)(100*kappa[i].position.back().x)/1000 < LINE_OBJ_CREATION[0]
-            && (int)(100*kappa[i].position.back().x)/1000 > LINE_OBJ_CREATION[1]
-            && correl_histogram < .8)
-        {
-            instantiate_newCustomers(kappa[i]);
-        }
-        else if ((int)(100*kappa[i].position.back().x)/1000 > 30)
-        {
-            customer[sav].histog.push_back(kappa[i].histog.back());
-            customer[sav].position.push_back(kappa[i].position.back());
-        }
-        
-//        double euclidean_dist = norm(customer[sav].position.back() - kappa[i].position.back());
-//        if (customer_kappa > .8 && euclidean_dist < 300 )
-//        {
-//            customer[sav].histog.push_back(kappa[i].histog.back());
-//            customer[sav].position.push_back(kappa[i].position.back());
-//        }
-//        else if ( euclidean_dist < 150 )
-//        {
-//            customer[sav].histog.push_back(kappa[i].histog.back());
-//            customer[sav].position.push_back(kappa[i].position.back());
-//        }
-//        else if ((int)(100*kappa[i].position.back().x)/1000 < 110)
-//        {
-//            cout << kappa[i].position.back().x << " KAPA opsition when object is created \n\n";
-//            Customer tempKap = kappa[i];
-//            instantiate_newCustomers(tempKap);
-//        }
-        
-    } /* end outer loop */
-    if (manytopop) {;
-//        customer.pop_back();
-    }
-//    for (int i = 0; i < manytopop; i++) {
+    const unsigned int CSIZE = (int)min(customers.size(), new_customers.size());
+    /**  @brief push back updated position of customers */
+    for (int linker_index = 0; linker_index < CSIZE; linker_index++)
+        customers[linker_index].position.push_back(new_customers[linker_customer_index[linker_index]].position.back());
+
+    /**  @brief find index of customers that are completely new */
+    bool tmp[new_customers.size()];
+    for (int i = 0; i < new_customers.size(); i++)
+        tmp[linker_customer_index[i]] = true;
     
-//    }
+    /**  @brief instantiate new customers */
+    for (int i = 0; i < new_customers.size(); i++)
+    {
+        if (tmp[i] == false)
+        {
+            cout << "IN new customer creation\n";
+            allocate_newlyDetected(new_customers[i]);
+        }
+    }
+    /** @function linkCustomers end*/
+}
 
 
-} /*end CompareHistogram */
+
+
+/**  @brief trackCustomer links new object detected to new one if there is an association between them */
+void trackCustomer ( vector<Customer> newly_found )  /**  @note kappa is vector of all objects recognized */
+{
+//    if (!customer.size())
+//    instantiate_newCustomers(newly_found);
+    ///allocate_newlyDetected(newly_found);
+    
+    double dist_objtocust;
+    int linker_customer_index[newly_found.size()];
+    /** start comparing each object detected to all the customers in the arraylist of Customers */
+    for (int nfound = 0; nfound < newly_found.size(); nfound++)
+    {
+        /** @note push back new data into customer which is closest i.e. customer pos to newlydetectedobject pos in frame coordinate */
+        dist_objtocust = 1000;
+        for (int cust = 0; cust < customer.size(); cust++)
+        {
+            if (norm(customer[cust].position.back() - newly_found[nfound].position.back()) < dist_objtocust)
+            {
+                dist_objtocust = norm(customer[cust].position.back() - newly_found[nfound].position.back());
+                linker_customer_index[nfound] = cust;
+            }
+        } ///end inner for
+    } ///end outer for
+    
+} ///end trackCustomer
+
+
+
+//void CompareHistogram ( vector<Customer> kappa )
+//{
+////    if (customer.size() == 0)
+////    {
+////        if ((int)(100*kappa.back().position.back().x)/1000 < 10
+////            && (int)(100*kappa.back().position.back().x)/1000 > 11)
+////        {
+////            cout << kappa.back().position.back().x << " KAPA opsition when object is created \n\n";
+////            instantiate_newCustomers(kappa.back());
+////        }
+////        else
+////        {
+////            return;
+////        }
+////    }
+//    
+//    int sav = -1;
+//    int TAU = (int)customer.size();
+//    double customer_kappa = 0.0;
+//    /**  @brief for each object detected check against the customers already instantiated 
+//        @note compares using distance and previous point history of the customers */
+//    for (int i = 0; i < kappa.size(); i++)
+//    {
+//        customer_kappa = 10000;
+//        double correl_histogram = 0.0;
+//        for ( int k = 0; k < TAU; k++ )
+//        {
+//            if (customer_kappa > norm(customer[k].position.back() - kappa[i].position.back()))
+//            {
+//                correl_histogram = compareHist(customer[k].histog.back(), kappa[i].histog.back(), CV_COMP_CORREL);
+//                customer_kappa = norm(customer[k].position.back() - kappa[i].position.back());
+//                sav = k;
+//            } /* end if */
+//        } /* end inner loop */
+//
+//
+//        /**  @brief object creation */
+////        if ((int)(kappa[i].position.back().x)/100 < LINE_OBJ_CREATION[0]
+////            && (int)(kappa[i].position.back().x)/100 > LINE_OBJ_CREATION[1]
+////            && correl_histogram < .5)
+//        if ()
+//        {
+//            instantiate_newCustomers(kappa[i]);
+//            
+//        }
+//        else if ((int)(kappa[i].position.back().x)/100 > 30)
+//        {
+//            customer[sav].histog.push_back(kappa[i].histog.back());
+//            customer[sav].position.push_back(kappa[i].position.back());
+//        }
+//        
+//    } /* end outer loop */
+//
+//} /*end CompareHistogram */
 
 
 
@@ -220,34 +296,6 @@ int main(int argc, const char * argv[]) {
         if (!frame.data)
             return -1;
         
-//
-////        Mat mask;
-//        Mat mask = Mat::zeros( frame.rows, frame.cols, CV_8UC1 );
-//        inRange(frame, paint_red, Scalar(127,127,255), mask);
-//
-//        imshow("mask2", mask);
-////        Mat transparent;
-////        copy(frame, transparent, mask);
-////
-////        imshow("transparent", transparent);
-////        
-//        Vec3b colorRef(255,0,0); // for ''pure'' blue
-//        Vec3b paint_RED(0,0,255);
-//
-//        for (int i = 0; i < frame.rows; i++ )
-//        {
-//            for (int k = 0; k < frame.cols; k++ )
-//            {
-//                if(frame.at<Vec3b>(Point(k,i)) == paint_RED)
-////                if(frame.at<Scalar>(k,i) < frame.at<Scalar>(k,i))
-//                {
-//                    mask.at<Vec3b>(Point(k,i)) = Vec3b(255,255,255);
-//                }
-//            }
-//        }
-//
-//        imshow("mask", mask);
-//        
         
         /**  @brief set regions of interest (ROI) to scan for objects,  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
@@ -258,22 +306,25 @@ int main(int argc, const char * argv[]) {
         /**  @function @brief
          encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE)*/
         encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
-        vector<Customer> customersDetected = encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
+        vector<Customer> new_customers = encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
         
-        vector<Customer> vec_customers;
-        CalcHistogram( &vec_customers, customersDetected );
+        linkCustomers(new_customers, not_tracked_customer);
+        
+//        vector<Customer> vec_customers;
+//        initializeObjectsDetected(&vec_customers, customersDetected);
+//        CalcHistogram( &vec_customers, customersDetected );
         
         
-        if (vec_customers.size())  /**  @note if there are customers already detected */
-        {
-            CompareHistogram( vec_customers );
-        }
+//        if (vec_customers.size())  /**  @note if there are customers already detected */
+//        {
+//            CompareHistogram( vec_customers );
+//        }
         
         for (int i = 0; i < customer.size(); i++)  /**  @note puts labels on Customer */
         {
             char identifier[100];
-            sprintf(identifier, "C%d", customer[i].id);
-            putText(customer_line, identifier, customer[i].position.back(), 3, 1, WHITE, 1.5, 40);
+            sprintf(identifier, "      C%d", customer[i].id);
+            putText(customer_line, identifier, customer[i].position.back(), 3, .8, WHITE, 1.5, 40);
         }
         
         
@@ -298,7 +349,7 @@ int main(int argc, const char * argv[]) {
         if( c == 'q' || c == 'Q' || (c & 255) == 27 )
             break;
         
-    }   /*end main loop */
+    }   /* end main loop */
     
     return 0;
 }
@@ -369,10 +420,11 @@ vector<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD,
         boundRect[i] = boundingRect( Mat(contours_poly[i]) );
         minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
         if( (radius[i] > 35) && (METHOD == OBJECT_CUSTOMER) )
-        { //circle( *instanceROI, center[i], (int)radius[i]/2, blue, 1, 8, 0 );
-//            circle( *instanceROI, center[i], 2, lightGREEN, 2, 8, 0);
-//            circle(*instanceROI, center[i], 8, red, 2, 4, 0);
-            ;
+        {
+            circle( *instanceROI, center[i], (int)radius[i]/2, paint_blue, 1, 8, 0 );
+            circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
+//            circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
+//            ;
         }
     }
     
@@ -402,8 +454,8 @@ vector<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD,
             // c is center of rect
             char coordi[100];
             /**  @brief coordinates on base 5 */
-            sprintf(coordi, "[%d,%d]", (int)(100*c[i].x)/1000, (int)(100*c[i].y)/1000);
-            putText(*instanceROI, coordi, c[i], 6, .5, WHITE);
+            sprintf(coordi, "[%d,%d]: ", (int)(c[i].x/100), (int)(c[i].y/100));
+            putText(*instanceROI, coordi, c[i], 6, .7, WHITE);
 
         }
         tmp.histog.push_back(untouch_frame(boundRectOut[i]));
@@ -534,7 +586,7 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
     Size scaleFactor(-10,-10); // To expand rectangles, i.e. increase sensitivity to nearby rectangles --can be anything
     for (int i = 0; i < inputBoxes->size(); i++)
     {
-//        double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
+        //// double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
         /**  @brief filter boxes, ignore too small or big boxes */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
@@ -546,6 +598,7 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         } /**  end switch */
 
         Rect box = inputBoxes->at(i) + scaleFactor;
+//        circle(<#InputOutputArray img#>, <#Point center#>, <#int radius#>, <#const Scalar &color#>);
         rectangle(mask, box, Scalar(255), CV_FILLED); // Draw filled bounding boxes on mask
     }
     
