@@ -138,7 +138,6 @@ int main() {
         if( c == ' ' )
         {
             smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : smoothType == MEDIAN ? BILATERAL_FILTER : GAUSSIAN;
-//            smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : GAUSSIAN;
             if(verbose) printf("smoothType %d\n1.Gaussian 2. Blur 3. Median:\n", smoothType+1);
         }
         if( c == 'q' || c == 'Q' || (c & 255) == 27 )
@@ -162,6 +161,7 @@ void customerList_add( Customer ttcustomer)
     ttcustomer.id = mu++;
     track_customer.push_back(ttcustomer);
 }
+
 /**
  Instantiates newly detected objects
  @function customerList_add
@@ -244,8 +244,19 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
 
 
 
-/***  @function encapsulateObjects
-         @return array of croppedObjects i.e customers and other detected objects */
+/**
+ Will push new customer into its respective already IDed customer. If new, then create new customer
+ @function encapsulateObjects
+ @param *instanceROI pointer to area of interest where we want to find the objects
+ @param *baseROI pointer to the area of interest with no objects present i.e. the background
+ @param METHOD which object are we looking for? e.g. OBJ_ITEM? OBJ_CUSTOMER?
+ @param KSIZE aperture liner size; must be odd and greater than 1 i.e. 3,5,7 ...
+ @param SIGMA for GaussianBlur use. Gassian kernel standard deviation in X
+ @param THRESH threshold value to be used in threshold to detect edges on final result from Laplacian
+ @param SMOOTHTYPE blur type to be used i.e. MEDIAN, GAUSSIAN, BLUR or BILATERAL_FILTER
+ @see customerList_add(Customer custom)
+ @return array of customers and other detected objects
+ */
 deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )
 {
     Scalar COLOR;
