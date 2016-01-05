@@ -45,7 +45,7 @@ int main() {
     VideoCapture cap;
     String capstone_dir = "/Users/drifter/Desktop/capstone/";
     
-    cap.open(capstone_dir+"2CART.mp4");
+    cap.open(capstone_dir+"Untitled.mp4");
     const double FPS_CAP=cap.get(CV_CAP_PROP_FPS);
     /** more vid files:
      @a SEGMENTA_720P_20FPS.mp4
@@ -56,13 +56,13 @@ int main() {
      @c Untitled.mp4
      @e 30FPS.mp4
      @a 6FPS.mp4   */
-
+    
     baseframe = imread(BASEFRAME_DIR);
     namedWindow( "Laplacian", 0 );
     
     /**  mold: A hollow form or matrix for shaping a segment from frame */
     /**  @constructor Rect
-    Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
+     Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
     Rect MOLD_CUSTOMERLINE_WIDE(0, baseframe.rows/5,baseframe.cols,baseframe.rows/2);
     Rect MOLD_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
     Rect MOLD_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,120);
@@ -71,7 +71,7 @@ int main() {
     Mat line_print, belt_print, frame, customer_line;
     line_print = baseframe(MOLD_CUSTOMERLINE);
     belt_print = baseframe(MOLD_CONVEYOR_BELT);
-
+    
     line_print.copyTo(sketchMat);
     
     stain[0] = paint_yellow;
@@ -81,7 +81,7 @@ int main() {
     stain[4] = paint_lightORANGE;
     stain[5] = paint_ade004;
     stain[6] = paint_blue;
-
+    
     vector<MatND> past_vHistograms;
     
     /**  @brief main loop */
@@ -89,7 +89,7 @@ int main() {
         /** Skip frames in order to use video as it if it was 10FPS */
         for(int i = 0; i < (int)FPS_CAP/6; i++)
             cap >> frame;
-//        cap >> frame;
+        //        cap >> frame;
         
         if (!frame.data)
             return -1;
@@ -155,6 +155,7 @@ int main() {
 void customerList_add( Customer ttcustomer)
 {
     ttcustomer.id = mu++;
+    ttcustomer.track = false;
     track_customer.push_back(ttcustomer);
 }
 
@@ -184,87 +185,234 @@ unsigned int customerList_add(deque<Customer> ttcustomers)
  */
 void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer)
 {
-    /** if there aren't customers to compare to and there is at least one customer detected
-     @brief first instance of customers */
-    if (!anchor_customer->size() && current_detected->size())
-        customerList_add(*current_detected);
+    unsigned int SIZEAnchor = (int)anchor_customer->size();
+    unsigned int SIZECurrent = (int)current_detected->size();
     
-    
-    /**  @brief when same number of customers detected */
-    double distance_obj_to_obj = 1000.0;
-    vector<bool> linked = {false};
-//    bool b = false;
-//    generate_n(back_inserter(linked), anchor_customer->size(), [&b]() { return (b = !b); });
-    vector<int> linker_customer_index = {-1};
-    
-    /**  @start finding each object detected to all the customers in the arraylist of Customers */
-    for (int cust = 0; cust < anchor_customer->size(); cust++)
+    /**  initialize customers when list is empty */
+    if (anchor_customer->empty() && not current_detected->empty())
     {
-        distance_obj_to_obj = 1000.0;
-        /**  @note push back new data into customer which is closest i.e. customer pos to newlydetectedobject pos in frame coordinate */
-        for (int nfound = 0; nfound < current_detected->size(); nfound++)
+        for (int i = 0; i < SIZECurrent; i++)
         {
-            if (norm(anchor_customer->at(cust).position.back() - current_detected->at(nfound).position.back()) < distance_obj_to_obj)
+            if (current_detected->at(i).position.back().x/10 > 25 )
             {
-                /** save index with smallest distance from prev and current list of customers */
-                distance_obj_to_obj = norm(anchor_customer->at(cust).position.back() - current_detected->at(nfound).position.back());
-                if (!linked[cust])
-                {
-                    linker_customer_index[cust] = nfound;   ///gets the index of new_customer corresponding to index to customer list
-                    linked[cust] = true;
-                }
+                customerList_add(current_detected->at(i));
             }
-        } /** end inner for */
-    } /** end outer for */
+        }
+        return;
+    }
     
-    if (distance_obj_to_obj > 10.0)
-        printf("distance obj to obj:\n%.2f\n", distance_obj_to_obj);
+    double distance_obj_to_obj = 1000.0;
+    /** @var Aconnected @var Dconnected */
+    /** Aconnected takes the link from Customer list to the newly detected
+     Dconnected takes the link from newly detected to Customers */
+    vector<int> Aconnected, Dconnected;
+    for (int i = 0; i < SIZEAnchor; i++)
+        Aconnected.push_back(-1);
+    for (int i = 0; i < SIZECurrent; i++)
+        Dconnected.push_back(-1);
     
-    /**  @var CSIZE: number of customer positions to push into arrayList of Customers */
-    const unsigned int CSIZE = (int)min(anchor_customer->size(), current_detected->size());
-    /**  @brief push back updated position of customers into array of position in customer */
-    for (int linker_index = 0; linker_index < CSIZE; linker_index++)
+    /**  check every customer against newly detected */
+    for (int i = 0; i < SIZEAnchor; i++)
     {
-        if (distance_obj_to_obj > 90)
-            continue;
+        /** @var tmp will hold the index of each of the new detected objects to connect it with customer */
+        int tmp = -1;
+        distance_obj_to_obj = 1000.0;
+        for (int k = 0; k < SIZECurrent; k++)
+        {
+            /** @if distance between an object and a customer pos is smaller than placeholder than update connection */
+            if (norm(anchor_customer->at(i).position.back() - current_detected->at(k).position.back()) < distance_obj_to_obj)
+            {
+                distance_obj_to_obj = norm(anchor_customer->at(i).position.back() - current_detected->at(k).position.back());
+                tmp =  k;
+            }
+        }
+        /**  @if there was an update, a new closer distance between objects, then update connections */
+        if (Aconnected[tmp] == -1 && tmp != -1)
+        {
+            Aconnected[tmp] = i;
+            Dconnected[i] = tmp;
+        }
         
-        anchor_customer->at(linker_index).position.push_back(current_detected->at(linker_customer_index[linker_index]).position.back());
-        
-        /**  @brief track set to true when passed predetermined line threshold */
-        if (!anchor_customer->at(linker_index).track)
-            if ((int)(anchor_customer->at(linker_index).position[0].x/10) >= 100 &&
-                (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
-                anchor_customer->at(linker_index).track = true;
-        
-        /**  @brief stop tracking object when it has already checked out */
-        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25) {
-            anchor_customer->at(linker_index).track = false;
+    }
+    
+    for (int i = 0; i < Aconnected.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
+    {
+        if (Aconnected[i] != -1)
+        {
+            anchor_customer->at(Aconnected[i]).position.push_back(current_detected->at(i).position.back());
+            Customer TEMP = anchor_customer->at(i);
+            Point TMP = TEMP.position.back();
+            cout << TMP << "\n";
+        }
+        printf("connections %d to %d\n\n", i, Aconnected[i]);
+    }
+    puts("");
+    for (int i = 0; i < Dconnected.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
+    {
+        if (Dconnected[i] == -1)
+        {
+            customerList_add(current_detected->at(i));
         }
     }
     
-    if (verbose)
-        printf("\nsize of \nanchor_customers: %d \ncurrent detected: %d\n", (int)anchor_customer->size(), (int)current_detected->size());
     
     
-    /**  @brief find index of customers that are completely new */
-    vector<bool> tmp = {false};
-//    (current_detected->size());
-//    generate_n(back_inserter(tmp), current_detected->size(), [&b]() { return (b = !b); });
+    /**  @code */
+    /**  @var CSIZE: number of customer positions to push into arrayList of Customers */
+    const unsigned int CSIZE = (int)min(SIZECurrent, SIZEAnchor);
+    /**  @brief push back updated position of customers into array of position in customer */
+    for (int linker_index = 0; linker_index < CSIZE; linker_index++)
+    {
+        if (distance_obj_to_obj > 90 || Aconnected[linker_index] == -1)
+            continue;
+        
+        anchor_customer->at(linker_index).position.push_back(current_detected->at(Aconnected[linker_index]).position.back());
+        
+        /**  @brief set track to TRUE when threshold is crossed */
+        if (!anchor_customer->at(linker_index).track)
+            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 105 &&
+                (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
+                anchor_customer->at(linker_index).track = true;
+        
+        /**  @brief stop tracking object when customer has checked out */
+        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25)
+        {
+            anchor_customer->at(linker_index).track = false;
+        }
+    }
+    /**  @endcode */
     
-    for (int i = 0; i < current_detected->size(); i++)
-        if (linker_customer_index[i] != -1)
-            tmp[linker_customer_index[i]] = true;
-        else
-            tmp[linker_customer_index[i]] = false;
-    
-    
-    /**  @brief instantiate new customers */
-    for (int i = 0; i < current_detected->size(); i++)
-        if (tmp[i] == false)
-            customerList_add(current_detected[i]);
-    
-    /**  @endcode linkCustomers */
 }
+
+//void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer)
+//{
+//    /** if there aren't customers to compare to and there is at least one customer detected
+//     @brief first instance of customers */
+//    if (!anchor_customer->size() && current_detected->size())
+//    {
+//        cout << "INIT CUSTOMERS\n";
+//        customerList_add(*current_detected);
+//        return;
+//    }
+//    unsigned long CDSIZE = current_detected->size();
+//    unsigned long ACSIZE = anchor_customer->size();
+//
+//    /**  @brief when same number of customers detected */
+//    double distance_obj_to_obj = 1000.0;
+//    vector<bool> linked;
+//    bool b = false;
+////    generate_n(back_inserter(linked), anchor_customer->size(), [&b]() { return (b = !b); });
+//
+//
+//    vector<int> linker_customer_index;
+//    for (int i = 0; i < anchor_customer->size(); i++)
+//    {
+//        linker_customer_index.push_back(-1);
+//        linked.push_back(false);
+//    }
+//
+//    for (int i = 0; i < anchor_customer->size(); i++)
+//        cout << linked[i] << "\n";
+//
+////    for (int i = 0; i < linker_customer_index.size(); i++)
+////    {
+////        printf("linker %d to %d\n", i, linker_customer_index[i]);
+////    }
+//
+//    /**  @start finding each object detected to all the customers in the arraylist of Customers */
+//    for (int cust = 0; cust < anchor_customer->size(); cust++)
+//    {
+//        distance_obj_to_obj = 1000.0;
+//        /**  @note push back new data into customer which is closest i.e. customer pos to newlydetectedobject pos in frame coordinate */
+//        for (int nfound = 0; nfound < current_detected->size(); nfound++)
+//        {
+//            if (norm(anchor_customer->at(cust).position.back() - current_detected->at(nfound).position.back()) < distance_obj_to_obj)
+//            {
+//                /** save index with smallest distance from prev and current list of customers */
+//                distance_obj_to_obj = norm(anchor_customer->at(cust).position.back() - current_detected->at(nfound).position.back());
+//                if (linked[nfound] == false)
+//                {
+//                    linker_customer_index[cust] = nfound;   ///gets the index of new_customer corresponding to index to customer list
+//                }
+//            }
+//        } /** end inner for */
+//        linked[linker_customer_index[cust]] = true;
+//    } /** end outer for */
+//
+//    if (distance_obj_to_obj > 10.0)
+//        printf("distance obj to obj:\n%.2f\n", distance_obj_to_obj);
+//
+//    for (int i = 0; i < linker_customer_index.size(); i++)
+//    {
+//        printf("linker %d to %d\n", i, linker_customer_index[i]);
+//    }
+//    puts("");
+//
+//
+//    for (int i = 0; i < anchor_customer->size(); i++)
+//    {
+//        printf("Customer[%d] \ncurrent and at(0) positionX:\ncurrent: %d\nat(0): %d\n", i,
+//               (int)anchor_customer->at(i).position.back().x/10,
+//               (int)anchor_customer->at(i).position[0].x/10);
+//    }
+//    puts("");
+//
+//
+//    /**  @var CSIZE: number of customer positions to push into arrayList of Customers */
+//    const unsigned int CSIZE = (int)min(anchor_customer->size(), current_detected->size());
+//    /**  @brief push back updated position of customers into array of position in customer */
+//    for (int linker_index = 0; linker_index < CSIZE; linker_index++)
+//    {
+//        if (distance_obj_to_obj > 90 || linker_customer_index[linker_index] == -1)
+//            continue;
+//
+//        anchor_customer->at(linker_index).position.push_back(current_detected->at(linker_customer_index[linker_index]).position.back());
+//
+//        /**  @brief set track to TRUE when threshold is crossed */
+//        if (!anchor_customer->at(linker_index).track)
+//            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 105 &&
+//                (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
+//                anchor_customer->at(linker_index).track = true;
+//
+//        /**  @brief stop tracking object when customer has checked out */
+//        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25)
+//        {
+//            anchor_customer->at(linker_index).track = false;
+//        }
+//    }
+//
+//
+//
+//    if (verbose)
+//        printf("\nsize of \nanchor_customers: %d \ncurrent detected: %d\n", (int)anchor_customer->size(), (int)current_detected->size());
+//
+//
+//    /**  @brief find index of customers that are completely new */
+//    vector<bool> tmp;
+//    generate_n(back_inserter(tmp), current_detected->size(), [&b]() { return (b = !b); });
+//
+//    for (int i = 0; i < current_detected->size(); i++)
+//        if (linker_customer_index[i] != -1)
+//            tmp[linker_customer_index[i]] = true;
+//
+//    for (int i = 0; i < tmp.size(); i++)
+//        cout << tmp[i] << "\n";
+//
+//    /**  @brief instantiate new customers */
+//    for (int i = 0; i < current_detected->size(); i++)
+//        if (tmp[i] == false)
+//        {
+//            cout << "ADD INIT CUSTOMERS\n\n";
+//            customerList_add(current_detected[i]);
+//        }
+//
+//    if (CDSIZE != ACSIZE)
+//    {
+//        ;
+//    }
+//
+//    /**  @endcode linkCustomers */
+//}
 
 
 /**
@@ -286,7 +434,7 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
     Mat currentgray, basegray, differs;
     cvtColor(*instanceROI, currentgray, COLOR_BGR2GRAY);
     cvtColor(*baseROI, basegray, COLOR_BGR2GRAY);
-
+    
     if (METHOD == OBJECT_CUSTOMER)
     { /**  Substract from base image the current one, detects/shows people */
         differs = basegray - currentgray;
@@ -314,11 +462,11 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
     else /* BLUR */
         blur(differs, smoothed, Size(KSIZE, KSIZE));
     
-
+    
     /**  @brief Laplacian(InputArray src, OutputArray dst, int ddepth) */
     Laplacian(smoothed, laplace, CV_16S, 5);
     convertScaleAbs(laplace, result, (SIGMA+1)*0.25);
-
+    
     if(verbose2)
         imshow("result@#3", result);
     Mat threshold_output;
@@ -346,28 +494,28 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
         {
             circle( *instanceROI, center[i], (int)radius[i]/2, paint_blue, 1, 8, 0 );
             circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
-//            circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
-//            ;
+            //            circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
+            //            ;
         }
     }
     
-
+    
     /**   @brief merge overlapping boxes,  @return number of boxes
      @note might be better to merge contained boxes only i.e
      @note A is a subset of B if every element of A is contained in B */
     int overlapContours_size = mergeOverlappingBoxes(&boundRect, *instanceROI, &boundRectOut, METHOD);
-
+    
     deque<Customer> croppedObject;
     Rect r;
     /**  Draw polygonal contour + bonding rects + circles */
     for( int i = 0; i< overlapContours_size/*contours_eo.size()*/; i++ )
     {
-//        matchTemplate(untouch_frame, croppedObject[i], result, CV_TM_CCOEFF_NORMED);
+        //        matchTemplate(untouch_frame, croppedObject[i], result, CV_TM_CCOEFF_NORMED);
         Customer tmp;
         /**  @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
         rectangle( *instanceROI, boundRectOut[i].tl(), boundRectOut[i].br(), COLOR, 2.0, 4, 0 );
-
-
+        
+        
         if (METHOD == OBJECT_CUSTOMER)
         {
             /**  @brief c center of rectangle, saves coordinates */
@@ -378,14 +526,14 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
             /**  @brief coordinates on base 5 */
             sprintf(coordi, "[%d,%d]: ", (int)(c[i].x/10), (int)(c[i].y/10));
             putText(*instanceROI, coordi, c[i], 6, .7, WHITE);
-
+            
         }
         tmp.histog.push_back(untouch_frame(boundRectOut[i]));
         tmp.position.push_back(Point2d(r.x + r.width / 2, r.y + r.height / 2));
         croppedObject.push_back(tmp);
-
+        
     }
-
+    
     if (OPTFLOW_ON &&
         (OBJECT_CUSTOMER == METHOD))
         CustomerOpticalFlow(overlapContours_size);
@@ -444,7 +592,7 @@ void CustomerOpticalFlow(int noObjects_TDOF)
 
 
 /**
-  Merges overlapping boxes in order to show only one box per object detected
+ Merges overlapping boxes in order to show only one box per object detected
  @function mergeOverlappingBoxes
  @param inputBoxes is an array of all the boxes found in frame
  @param image is pointer to matrix of area of interest (ROI)
@@ -469,13 +617,13 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
             case OBJECT_ITEM:
                 break;
         } /**  end switch */
-
+        
         Rect box = inputBoxes->at(i) + scaleFactor;
         /**  Draw filled bounding boxes on mask */
         rectangle(mask, box, Scalar(255), CV_FILLED);
     }
     
-
+    
     if (verbose2)
         imshow("Amask", mask);
     vector<vector<Point>> contoursOverlap;

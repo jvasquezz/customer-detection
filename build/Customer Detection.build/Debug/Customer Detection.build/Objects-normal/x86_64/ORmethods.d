@@ -1,2 +1,2 @@
 dependencies: \
-  /Users/drifter/Dropbox/Feloh/Customer\ Detection/Customer\ Detection/ORmethods.cpp
+  /Users/drifter/Documents/customer-detection/Customer\ Detection/ORmethods.cpp
