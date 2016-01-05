@@ -193,7 +193,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     {
         for (int i = 0; i < SIZECurrent; i++)
         {
-            if (current_detected->at(i).position.back().x/10 > 25 )
+            if (current_detected->at(i).position.back().x/10 > 110)
             {
                 customerList_add(current_detected->at(i));
             }
@@ -201,15 +201,25 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         return;
     }
     
+//    for (int i = 0; i < SIZEAnchor; i++)
+//    {
+////        (int)(anchor_customer->at(linker_index).position[0].x/10)
+//        if (anchor_customer->at(i).position[0].x/10 < 115)
+//        {
+//            anchor_customer->erase(anchor_customer->begin()+i);
+//            anchor_customer->shrink_to_fit();
+//        }
+//    }
+
     double distance_obj_to_obj = 1000.0;
-    /** @var Aconnected @var Dconnected */
-    /** Aconnected takes the link from Customer list to the newly detected
-     Dconnected takes the link from newly detected to Customers */
-    vector<int> Aconnected, Dconnected;
+    /** @var AconnectsD @var DconnectsA */
+    /** AconnectsD takes the link from Customer list to the newly detected
+     DconnectsA takes the link from newly detected to Customers */
+    vector<int> AconnectsD, DconnectsA;
     for (int i = 0; i < SIZEAnchor; i++)
-        Aconnected.push_back(-1);
+        AconnectsD.push_back(-1);
     for (int i = 0; i < SIZECurrent; i++)
-        Dconnected.push_back(-1);
+        DconnectsA.push_back(-1);
     
     /**  check every customer against newly detected */
     for (int i = 0; i < SIZEAnchor; i++)
@@ -227,29 +237,39 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             }
         }
         /**  @if there was an update, a new closer distance between objects, then update connections */
-        if (Aconnected[tmp] == -1 && tmp != -1)
+        if (AconnectsD[i] == -1 && tmp != -1 && DconnectsA[tmp] == -1)
         {
-            Aconnected[tmp] = i;
-            Dconnected[i] = tmp;
+            AconnectsD[i] = tmp;
+            DconnectsA[tmp] = i;
         }
         
     }
     
-    for (int i = 0; i < Aconnected.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
+    /**   Push new position of newly detected into Customer list
+            ignore when not found new connection for a given customer i.e. keeping previous last position
+            @note that if the new detected displaces too much without detecting it might be difficult to relate this objects together */
+    for (int i = 0; i < AconnectsD.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
     {
-        if (Aconnected[i] != -1)
+        if (AconnectsD[i] != -1 && distance_obj_to_obj < 90)
         {
-            anchor_customer->at(Aconnected[i]).position.push_back(current_detected->at(i).position.back());
+            anchor_customer->at(i).position.push_back(current_detected->at(AconnectsD[i]).position.back());
             Customer TEMP = anchor_customer->at(i);
             Point TMP = TEMP.position.back();
-            cout << TMP << "\n";
+            Point TMPminus1 = TEMP.position[TEMP.position.size()-2];
+            cout << "[" << TMPminus1.x/10 << ", " << TMPminus1.y/10 << "]\n";
+            cout << "[" << TMP.x/10 << ", " << TMP.y/10 << "]\n";
         }
-        printf("connections %d to %d\n\n", i, Aconnected[i]);
+        printf("connections %d to %d\n\n", i, AconnectsD[i]);
     }
     puts("");
-    for (int i = 0; i < Dconnected.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
+    
+    /**  Create new customers when there is a detected object that is introduced in the current frame 
+            i.e. a newly detected object which wasnt connected to a respective object in Customer list */
+    for (int i = 0; i < DconnectsA.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
     {
-        if (Dconnected[i] == -1)
+        /** create new Customer only if started behind thresh */
+        if ((DconnectsA[i] == -1) &&
+            (current_detected->at(i).position.back().x/10 > 105))
         {
             customerList_add(current_detected->at(i));
         }
@@ -263,10 +283,10 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     /**  @brief push back updated position of customers into array of position in customer */
     for (int linker_index = 0; linker_index < CSIZE; linker_index++)
     {
-        if (distance_obj_to_obj > 90 || Aconnected[linker_index] == -1)
+        if (distance_obj_to_obj > 90 || AconnectsD[linker_index] == -1)
             continue;
         
-        anchor_customer->at(linker_index).position.push_back(current_detected->at(Aconnected[linker_index]).position.back());
+//        anchor_customer->at(linker_index).position.push_back(current_detected->at(AconnectsD[linker_index]).position.back());
         
         /**  @brief set track to TRUE when threshold is crossed */
         if (!anchor_customer->at(linker_index).track)
@@ -274,13 +294,16 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                 (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
                 anchor_customer->at(linker_index).track = true;
         
+        
         /**  @brief stop tracking object when customer has checked out */
-        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25)
-        {
-            anchor_customer->at(linker_index).track = false;
-        }
+//        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25)
+//        {
+////            anchor_customer->pop_back();
+//            anchor_customer->at(linker_index).track = false;
+//        }
     }
     /**  @endcode */
+    cout << "PASS " << __LINE__ << " LINE\n\n";
     
 }
 
