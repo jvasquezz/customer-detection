@@ -92,11 +92,17 @@ int main() {
             cap >> frame;
         //        cap >> frame;
         
+        int CAP_CURRENT_FRAME = (int)cap.get(CV_CAP_PROP_POS_FRAMES);
+//        if (CAP_CURRENT_FRAME < 4300)
+//            continue;
+        
         if (!frame.data)
             return -1;
         
-        cout << "running frame: " << cap.get(CV_CAP_PROP_POS_FRAMES) << "\n";
+        cout << "running frame: " << CAP_CURRENT_FRAME << "\n";
         cout << "------------------------\n\n";
+        
+
         
         /**  @brief set regions of interest (ROI) to scan for objects  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
@@ -104,7 +110,7 @@ int main() {
         customer_line.copyTo(untouch_frame);
         Mat displays = frame(MOLD_CUSTOMERLINE_WIDE);
         char buffer[8];
-        sprintf(buffer, "FPS %d", (int)cap.get(CV_CAP_PROP_POS_FRAMES));
+        sprintf(buffer, "FPS %d", CAP_CURRENT_FRAME);
         putText(displays, buffer, Point(0+30,0+35), 3, .5, WHITE, 1.5, 40);
         
         /**  @function @brief
@@ -207,6 +213,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         return;
     }
     
+    /**  delete customers from list when they have finished */
     for (int i = 0; i < SIZEAnchor; i++)
     {
         if (anchor_customer->at(i).position.back().x/10 < 25)
@@ -216,8 +223,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         }
     }
     
-
-//    vector<double> tmp(SIZECurrent, 1000.0);
+    /**  Declare 2D array in order to store all distances from
+        every Customer in customerList to every newly detected object */
     vector<vector<double> > distance_obj_to_obj(SIZEAnchor, vector<double>(SIZECurrent));
     for (int a = 0; a < SIZEAnchor; a++)
     {
@@ -228,35 +235,26 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         }
     }
     
+    /**  Initialize distances on 2D array */
+    /** The 2D array serves to save the index of the Customer list vs the newly detected list position */
+    for (int i = 0; i < SIZEAnchor; i++)
+    {
+        for (int k = 0; k < SIZECurrent; k++)
+        { /** save all distances */
+            distance_obj_to_obj[i][k] = norm(anchor_customer->at(i).position.back() - current_detected->at(k).position.back());
+        }
+    }
+    
     /** @var AconnectsD @var DconnectsA */
-    /** AconnectsD takes the link from Customer list to a newly detected
-          DconnectsA takes the link from newly detected to Customer's list */
+    /** AconnectsD takes the link from Customer list to a newly detected object
+     DconnectsA takes the link from newly detected to Customer's list */
     vector<int> AconnectsD, DconnectsA;
     for (int i = 0; i < SIZEAnchor; i++)
         AconnectsD.push_back(-1);
     for (int i = 0; i < SIZECurrent; i++)
         DconnectsA.push_back(-1);
-    
-    /**  check every customer against newly detected */
-    for (int i = 0; i < SIZEAnchor; i++)
-    {
-        /** @var tmp will hold the index of each of the new detected objects to connect it with customer */
-        ///int tmp = -1;
-        ///distance_obj_to_obj = 1000.0;
-        for (int k = 0; k < SIZECurrent; k++)
-        {
-            /** @if distance between an object and a customer pos is smaller than placeholder than update connection */
-//            if (norm(anchor_customer->at(i).position.back() - current_detected->at(k).position.back()) < distance_obj_to_obj)
-//            {
-                distance_obj_to_obj[i][k] = norm(anchor_customer->at(i).position.back() - current_detected->at(k).position.back());
-//                tmp =  k;
-//            }
-        }
-    }
-    
-    
 
-    double minin = 1000;
+    double n_mins = 1000; /**  starting value for min value */
     vector<bool> alpha;
     vector<bool> delta;
     for (int i = 0; i < SIZEAnchor; i++)
@@ -264,24 +262,28 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     for (int i = 0; i < SIZECurrent; i++)
         delta.push_back(true);
 
-    /** finds all possible connecting objects detected */
+    /** finds all possible connecting objects from customer list to newly detected objects */
     for (int iter = 0; iter < min(SIZECurrent, SIZEAnchor); iter++)
     {
         /** finds the first minimum value in 2D vector. The position
-         of this value (a,d) are our connecting object positions in the lists */
+         of this value (a,d) are our connecting object positions in the lists 
+         a for position in Customer list to d in current detected objects */
+        n_mins = 1000;
         for (int a = 0; a < SIZEAnchor; a++)
         {
+            /** do not find any more connection for a row which is already connected */
             if (alpha[a] == true)
             {
                 for (int d = 0; d < SIZECurrent; d++)
                 {
-                    if ((distance_obj_to_obj[a][d] < minin) &&
-                        (delta[d] == true))
+                    if ((distance_obj_to_obj[a][d] < n_mins) &&
+                        (delta[d] == true)) /** do not find more connections for column already connected */
                     {
-                        minin = distance_obj_to_obj[a][d];
+                        n_mins = distance_obj_to_obj[a][d];
                         AconnectsD[a] = d;
                         DconnectsA[d] = a;
-                        /** need to find next minimun not in this row or column i.e. not in a and d */
+                        /** need to find next minimun not in this row or column i.e. not in a and d
+                            Therefore, set flags to false to skip this row and column */
                         alpha[a] = false;
                         delta[d] = false;
                     }
@@ -329,7 +331,6 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         }
     }
     
-    
     /**  @code */
     /**  @var CSIZE: number of customer positions to push into arrayList of Customers */
     const unsigned int CSIZE = (int)min(SIZECurrent, SIZEAnchor);
@@ -339,156 +340,18 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         if (distance_obj_to_obj[linker_index][AconnectsD[linker_index]] > 90 || AconnectsD[linker_index] == -1)
             continue;
         
-//        anchor_customer->at(linker_index).position.push_back(current_detected->at(AconnectsD[linker_index]).position.back());
-        
         /**  @brief set track to TRUE when threshold is crossed */
         if (!anchor_customer->at(linker_index).track)
             if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 105 &&
                 (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
                 anchor_customer->at(linker_index).track = true;
         
-        
         /**  @brief stop tracking object when customer has checked out */
-//        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25)
-//        {
-////            anchor_customer->pop_back();
-//            anchor_customer->at(linker_index).track = false;
-//        }
     }
     /**  @endcode */
 //    cout << "PASS " << __LINE__ << " LINE\n\n";
     
 }
-
-//void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer)
-//{
-//    /** if there aren't customers to compare to and there is at least one customer detected
-//     @brief first instance of customers */
-//    if (!anchor_customer->size() && current_detected->size())
-//    {
-//        cout << "INIT CUSTOMERS\n";
-//        customerList_add(*current_detected);
-//        return;
-//    }
-//    unsigned long CDSIZE = current_detected->size();
-//    unsigned long ACSIZE = anchor_customer->size();
-//
-//    /**  @brief when same number of customers detected */
-//    double distance_obj_to_obj = 1000.0;
-//    vector<bool> linked;
-//    bool b = false;
-////    generate_n(back_inserter(linked), anchor_customer->size(), [&b]() { return (b = !b); });
-//
-//
-//    vector<int> linker_customer_index;
-//    for (int i = 0; i < anchor_customer->size(); i++)
-//    {
-//        linker_customer_index.push_back(-1);
-//        linked.push_back(false);
-//    }
-//
-//    for (int i = 0; i < anchor_customer->size(); i++)
-//        cout << linked[i] << "\n";
-//
-////    for (int i = 0; i < linker_customer_index.size(); i++)
-////    {
-////        printf("linker %d to %d\n", i, linker_customer_index[i]);
-////    }
-//
-//    /**  @start finding each object detected to all the customers in the arraylist of Customers */
-//    for (int cust = 0; cust < anchor_customer->size(); cust++)
-//    {
-//        distance_obj_to_obj = 1000.0;
-//        /**  @note push back new data into customer which is closest i.e. customer pos to newlydetectedobject pos in frame coordinate */
-//        for (int nfound = 0; nfound < current_detected->size(); nfound++)
-//        {
-//            if (norm(anchor_customer->at(cust).position.back() - current_detected->at(nfound).position.back()) < distance_obj_to_obj)
-//            {
-//                /** save index with smallest distance from prev and current list of customers */
-//                distance_obj_to_obj = norm(anchor_customer->at(cust).position.back() - current_detected->at(nfound).position.back());
-//                if (linked[nfound] == false)
-//                {
-//                    linker_customer_index[cust] = nfound;   ///gets the index of new_customer corresponding to index to customer list
-//                }
-//            }
-//        } /** end inner for */
-//        linked[linker_customer_index[cust]] = true;
-//    } /** end outer for */
-//
-//    if (distance_obj_to_obj > 10.0)
-//        printf("distance obj to obj:\n%.2f\n", distance_obj_to_obj);
-//
-//    for (int i = 0; i < linker_customer_index.size(); i++)
-//    {
-//        printf("linker %d to %d\n", i, linker_customer_index[i]);
-//    }
-//    puts("");
-//
-//
-//    for (int i = 0; i < anchor_customer->size(); i++)
-//    {
-//        printf("Customer[%d] \ncurrent and at(0) positionX:\ncurrent: %d\nat(0): %d\n", i,
-//               (int)anchor_customer->at(i).position.back().x/10,
-//               (int)anchor_customer->at(i).position[0].x/10);
-//    }
-//    puts("");
-//
-//
-//    /**  @var CSIZE: number of customer positions to push into arrayList of Customers */
-//    const unsigned int CSIZE = (int)min(anchor_customer->size(), current_detected->size());
-//    /**  @brief push back updated position of customers into array of position in customer */
-//    for (int linker_index = 0; linker_index < CSIZE; linker_index++)
-//    {
-//        if (distance_obj_to_obj > 90 || linker_customer_index[linker_index] == -1)
-//            continue;
-//
-//        anchor_customer->at(linker_index).position.push_back(current_detected->at(linker_customer_index[linker_index]).position.back());
-//
-//        /**  @brief set track to TRUE when threshold is crossed */
-//        if (!anchor_customer->at(linker_index).track)
-//            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 105 &&
-//                (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
-//                anchor_customer->at(linker_index).track = true;
-//
-//        /**  @brief stop tracking object when customer has checked out */
-//        if ((int)(anchor_customer->at(linker_index).position.back().x/10) < 25)
-//        {
-//            anchor_customer->at(linker_index).track = false;
-//        }
-//    }
-//
-//
-//
-//    if (verbose)
-//        printf("\nsize of \nanchor_customers: %d \ncurrent detected: %d\n", (int)anchor_customer->size(), (int)current_detected->size());
-//
-//
-//    /**  @brief find index of customers that are completely new */
-//    vector<bool> tmp;
-//    generate_n(back_inserter(tmp), current_detected->size(), [&b]() { return (b = !b); });
-//
-//    for (int i = 0; i < current_detected->size(); i++)
-//        if (linker_customer_index[i] != -1)
-//            tmp[linker_customer_index[i]] = true;
-//
-//    for (int i = 0; i < tmp.size(); i++)
-//        cout << tmp[i] << "\n";
-//
-//    /**  @brief instantiate new customers */
-//    for (int i = 0; i < current_detected->size(); i++)
-//        if (tmp[i] == false)
-//        {
-//            cout << "ADD INIT CUSTOMERS\n\n";
-//            customerList_add(current_detected[i]);
-//        }
-//
-//    if (CDSIZE != ACSIZE)
-//    {
-//        ;
-//    }
-//
-//    /**  @endcode linkCustomers */
-//}
 
 
 /**
