@@ -46,7 +46,7 @@ int main() {
     VideoCapture cap;
     String capstone_dir = "/Users/drifter/Desktop/capstone/";
     
-    cap.open(capstone_dir+"2CART.mp4");
+    cap.open(capstone_dir+"10FPS.mp4");
     const double FPS_CAP=cap.get(CV_CAP_PROP_FPS);
     /** more vid files:
      @a SEGMENTA_720P_20FPS.mp4
@@ -220,6 +220,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         {
             anchor_customer->erase(anchor_customer->begin()+i);
             anchor_customer->shrink_to_fit();
+            return;
         }
     }
     
@@ -342,8 +343,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         
         /**  @brief set track to TRUE when threshold is crossed */
         if (!anchor_customer->at(linker_index).track)
-            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 105 &&
-                (int)(anchor_customer->at(linker_index).position.back().x/10) < 98)
+            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 109 &&
+                (int)(anchor_customer->at(linker_index).position.back().x/10) < 105)
                 anchor_customer->at(linker_index).track = true;
         
         /**  @brief stop tracking object when customer has checked out */
