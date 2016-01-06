@@ -40,6 +40,16 @@ extern Mat diff;
 extern int thresh;
 extern bool verbose;
 
+extern bool verbose;
+extern bool verbose2;
+extern bool verbose_linkingCustomers;
+extern bool flag;
+extern bool OPTFLOW_ON;
+extern const int INSTANT_DISPLACEMENT_TOLERANCE;
+extern const int CART_DETECTED_AT_START;
+extern const int OBJ_CREATION_LINE;
+extern const int OBJ_DELETION_LINE;
+
 extern Rect MOLD_CUSTOMERLINE_WIDE;
 extern Rect MOLD_CUSTOMERLINE;
 extern Rect MOLD_CONVEYOR_BELT;

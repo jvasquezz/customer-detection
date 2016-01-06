@@ -8,6 +8,10 @@ bool verbose2 = 0;
 bool verbose_linkingCustomers = 0;
 bool flag = 0;
 bool OPTFLOW_ON = 0;
+const int INSTANT_DISPLACEMENT_TOLERANCE = 150;
+const int CART_DETECTED_AT_START_OF_LINE = 109;
+const int OBJ_CREATION_LINE = 105;
+const int OBJ_DELETION_LINE = 20;
 
 Mat baseframe;
 Mat untouch_frame;
@@ -46,7 +50,7 @@ int main() {
     VideoCapture cap;
     String capstone_dir = "/Users/drifter/Desktop/capstone/";
     
-    cap.open(capstone_dir+"10FPS.mp4");
+    cap.open(capstone_dir+"Untitled.mp4");
     const double FPS_CAP=cap.get(CV_CAP_PROP_FPS);
     /** more vid files:
      @a SEGMENTA_720P_20FPS.mp4
@@ -86,9 +90,10 @@ int main() {
     vector<MatND> past_vHistograms;
     
     /**  @brief main loop */
-    for(;;) {
-        /** Skip frames in order to use video as it if it was 10FPS */
-        for(int i = 0; i < (int)FPS_CAP/6; i++)
+    for(;;)
+    {
+        /** Skip frames in order to use video as it if it was different rate of FPS */
+        for(int i = 0; i < (int)FPS_CAP/7; i++)
             cap >> frame;
         //        cap >> frame;
         
@@ -101,7 +106,6 @@ int main() {
         
         cout << "running frame: " << CAP_CURRENT_FRAME << "\n";
         cout << "------------------------\n\n";
-        
 
         
         /**  @brief set regions of interest (ROI) to scan for objects  */
@@ -213,10 +217,10 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         return;
     }
     
-    /**  delete customers from list when they have finished */
+    /**  delete customers from list when they have finished shopping i.e. they crossed threshold */
     for (int i = 0; i < SIZEAnchor; i++)
     {
-        if (anchor_customer->at(i).position.back().x/10 < 25)
+        if (anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE)
         {
             anchor_customer->erase(anchor_customer->begin()+i);
             anchor_customer->shrink_to_fit();
@@ -236,8 +240,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         }
     }
     
-    /**  Initialize distances on 2D array */
-    /** The 2D array serves to save the index of the Customer list vs the newly detected list position */
+    /** Initialize distances on 2D array
+        The 2D array serves to save the index of the Customer list vs the newly detected list indexes */
     for (int i = 0; i < SIZEAnchor; i++)
     {
         for (int k = 0; k < SIZECurrent; k++)
@@ -247,15 +251,22 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     }
     
     /** @var AconnectsD @var DconnectsA */
-    /** AconnectsD takes the link from Customer list to a newly detected object
-     DconnectsA takes the link from newly detected to Customer's list */
+    /** AconnectsD takes the index linking from Customer list to the newly (D)etected object
+        DconnectsA takes the link from newly (D)etected to the (A)nchor Customer's list 
+        e.g. in other words we are mapping from set A to set D and viceversa 
+        Mapping, any prescribed way of assigning to each object in one set a particular object in another (or the same) set
+        In order to keep track of the elements that have linked vs the ones that might need instantiation */
     vector<int> AconnectsD, DconnectsA;
     for (int i = 0; i < SIZEAnchor; i++)
         AconnectsD.push_back(-1);
     for (int i = 0; i < SIZECurrent; i++)
         DconnectsA.push_back(-1);
 
-    double n_mins = 1000; /**  starting value for min value */
+    /**  starting value for n_min */
+    double n_mins = 1000;
+    /** We create boolean arrays to keep track of Columns and Rows that have been used
+        We cannot map on object to two, therefore, our mapping needs to be one-to-one to preserve integrity of Customer linking
+        e.g. after selecting smallest double value we cannot use that smallest value's row and column to find the next */
     vector<bool> alpha;
     vector<bool> delta;
     for (int i = 0; i < SIZEAnchor; i++)
@@ -263,20 +274,32 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     for (int i = 0; i < SIZECurrent; i++)
         delta.push_back(true);
 
-    /** finds all possible connecting objects from customer list to newly detected objects */
+    /**  @code 2D array, if you find smallest double value is clearly 1.1 at intersection a1xd2. a1 connects to d2
+                                     a1    a2    a3     a4
+                                 +------------------------+
+                             d1 | 2.3 | 1.5 | 7.3 | 3.5  |
+                                  |- - - - - - - - - - - - - -|
+                             d2 | 1.1 | 3.5 | 9.1 | 3.3  |
+                                  |- - - - - - - - - - - - - -|
+                             d3 | 4.5 | 6.2 | 7.1 | 2.7  |
+                                 +------------------------+
+     next smallest distance is 1.5 at intersection a2xd1, a2 connects d1
+     @note notice we keep connecting to the min(ROW,COLS) as we have a one-to-one mapping, in this case min(3,4) as we have only 3 rows
+     next smallest is 2.3 at intersection a1xd1 but notice that we cannot connect either a1 or d1 because they are already connected, therefore
+     find next smallest, which is 2.7 at intersection a4xd3. a4 connects to d3
+     We have connected 3 and we cannot map any more leaving us with 'a3' disconnected,
+     therefore, it might need initialization of new customer
+     @endcode */
     for (int iter = 0; iter < min(SIZECurrent, SIZEAnchor); iter++)
-    {
+    {  /** finds all possible connecting objects from customer list to newly detected objects */
         /** finds the first minimum value in 2D vector. The position
          of this value (a,d) are our connecting object positions in the lists 
          a for position in Customer list to d in current detected objects */
         n_mins = 1000;
         for (int a = 0; a < SIZEAnchor; a++)
-        {
             /** do not find any more connection for a row which is already connected */
             if (alpha[a] == true)
-            {
                 for (int d = 0; d < SIZECurrent; d++)
-                {
                     if ((distance_obj_to_obj[a][d] < n_mins) &&
                         (delta[d] == true)) /** do not find more connections for column already connected */
                     {
@@ -287,27 +310,17 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                             Therefore, set flags to false to skip this row and column */
                         alpha[a] = false;
                         delta[d] = false;
-                    }
-                }
-            }
-        }
-    }
-    
-    /**  @if there was an update, a new closer distance between objects, then update connections */
-//    if (AconnectsD[i] == -1 && tmp != -1 && DconnectsA[tmp] == -1)
-//    {
-//        AconnectsD[i] = tmp;
-//        DconnectsA[tmp] = i;
-//    }
+                    } /** end if(delta[d] == true) */
+    } /** end iter controled loop */
     
     
-    /**   Push new position of newly detected into Customer list
-            ignore when not found new connection for a given customer i.e. keeping previous last position
-            @note that if the new detected displaces too much without detecting it might be difficult to relate this objects together */
+    /** Push new position of newly detected into Customer list
+        ignore when not found new connection for a given customer i.e. keeping previous last position
+        @note that if the new detected displaces too much without detecting it might be difficult to relate this objects together */
     for (int a = 0; a < AconnectsD.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; a++)
     {
         Point TMP, TMPminus1;
-        if (AconnectsD[a] != -1 && distance_obj_to_obj[a][AconnectsD[a]] < 90)
+        if (AconnectsD[a] != -1 && distance_obj_to_obj[a][AconnectsD[a]] < INSTANT_DISPLACEMENT_TOLERANCE)
         {
             anchor_customer->at(a).position.push_back(current_detected->at(AconnectsD[a]).position.back());
         }
@@ -325,8 +338,10 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     for (int i = 0; i < DconnectsA.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; i++)
     {
         /** create new Customer only if started behind thresh */
+        /** @note objects are created as they are detected behind threshold line so if it detects one cart but it goes away and another cart comes in then it wont create a new object for that new cart but it will fill the previously created
+            Consequently, the data beyong this threshold point is unreliable */
         if ((DconnectsA[i] == -1) &&
-            (current_detected->at(i).position.back().x/10 > 110))
+            (current_detected->at(i).position.back().x/10 > CART_DETECTED_AT_START_OF_LINE))
         {
             customerList_add(current_detected->at(i));
         }
@@ -338,20 +353,19 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     /**  @brief push back updated position of customers into array of position in customer */
     for (int linker_index = 0; linker_index < CSIZE; linker_index++)
     {
-        if (distance_obj_to_obj[linker_index][AconnectsD[linker_index]] > 90 || AconnectsD[linker_index] == -1)
+        if (distance_obj_to_obj[linker_index][AconnectsD[linker_index]] > INSTANT_DISPLACEMENT_TOLERANCE ||
+            (AconnectsD[linker_index] == -1))
             continue;
         
         /**  @brief set track to TRUE when threshold is crossed */
         if (!anchor_customer->at(linker_index).track)
-            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > 109 &&
-                (int)(anchor_customer->at(linker_index).position.back().x/10) < 105)
+            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > CART_DETECTED_AT_START_OF_LINE &&
+                (int)(anchor_customer->at(linker_index).position.back().x/10) < OBJ_CREATION_LINE)
                 anchor_customer->at(linker_index).track = true;
         
         /**  @brief stop tracking object when customer has checked out */
     }
     /**  @endcode */
-//    cout << "PASS " << __LINE__ << " LINE\n\n";
-    
 }
 
 
@@ -375,12 +389,12 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
     cvtColor(*instanceROI, currentgray, COLOR_BGR2GRAY);
     cvtColor(*baseROI, basegray, COLOR_BGR2GRAY);
     
-    if (METHOD == OBJECT_CUSTOMER)
+    if (OBJECT_CUSTOMER == METHOD)
     { /**  Substract from base image the current one, detects/shows people */
         differs = basegray - currentgray;
         COLOR = paint_yellow;
     }
-    else if (METHOD == OBJECT_ITEM)
+    else if (OBJECT_ITEM == METHOD)
     {
         differs = currentgray - basegray;
         COLOR = paint_lightORANGE;
@@ -432,7 +446,7 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
         minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
         if( (radius[i] > 35) && (METHOD == OBJECT_CUSTOMER) )
         {
-            circle( *instanceROI, center[i], (int)radius[i]/2, paint_blue, 1, 8, 0 );
+            circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
             circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
             //            circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
             //            ;
@@ -456,7 +470,7 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
         rectangle( *instanceROI, boundRectOut[i].tl(), boundRectOut[i].br(), COLOR, 2.0, 4, 0 );
         
         
-        if (METHOD == OBJECT_CUSTOMER)
+        if (OBJECT_CUSTOMER == METHOD)
         {
             /**  @brief c center of rectangle, saves coordinates */
             r = Rect(boundRectOut[i]);
