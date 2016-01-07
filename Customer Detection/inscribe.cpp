@@ -11,15 +11,10 @@
 //  Created by Rurouni on 1/6/16.
 //  Copyright © 2016 Rurouni. All rights reserved.
 //
+//  inscribe provides printing and lageling functionalities i.e. text over a Mat file
+//  also provides Scalar2 which reorders input values from Scalar for ease of use in color
 
-/**
- inscribe provides printing and lageling functionalities i.e. text over a Mat file
- also provides Scalar2 which reorders input values from Scalar for ease of use in color
- @class inscribe
- @function Scalar2
- @function putLabel
- @return Scalar
- */
+
 namespace inscribe
 {
     /**
@@ -44,7 +39,6 @@ namespace inscribe
      @param letters the number of characters to be in the labelText
      @param ground_color the background color of the label
      @see overloaded putTabel uses default ground color
-     @return void
      */
     void putLabel(Mat img, char* labelText, Point startPoint, double letters, Scalar ground_color)
     {
@@ -55,7 +49,13 @@ namespace inscribe
     /**
      Sets a tag/label over a Matrix (img)
      @see overloaded putTabel takes ground color as param
-     @return void
+     @code
+     Mat image = imread("directory/to/image/img.png");
+     char* texttoprint[100];
+     sprintf(texttoprint, "image area = %d", (image.height * image.width));
+     Point startingPoint(10,10);
+     int numberofletters = 17;
+     putLabel(image, texttoprint, startingPoint, numberofletters);
      */
     void putLabel(Mat img, char* labelText, Point startPoint, int letters)
     {

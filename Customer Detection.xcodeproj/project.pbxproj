@@ -213,6 +213,7 @@
 		FE8465401C23440D00274A19 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				LIBRARY_SEARCH_PATHS = "/usr/local/lib\n";
 				OTHER_LDFLAGS = (
 					"-lopencv_calib3d",
@@ -241,6 +242,7 @@
 		FE8465411C23440D00274A19 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				LIBRARY_SEARCH_PATHS = "/usr/local/lib\n";
 				OTHER_LDFLAGS = (
 					"-lopencv_calib3d",

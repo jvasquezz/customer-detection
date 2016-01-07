@@ -2,20 +2,23 @@
 #include "dependencies.hpp"
 
 
-/** Global variables */
+/** Variable flags */
 bool SHOW_OVERLAPPING_BOXES = false;
-bool SHOW_EDGES = false;
-bool OPTFLOW_ON = true;
+bool SHOW_P2POINT_CONNECTS = false;
+bool BISECT_F2FRAME = false;
+bool SHOW_EDGES = true;
+bool OPTFLOW_ON = false;
 bool SHOW_DIFF = false;
 bool verbose = 0;
 bool verbose2 = 0;
 
+/** Threshold constant variables */
 const int INSTANT_DISPLACEMENT_TOLERANCE = 150;
 const int CART_DETECTED_AT_START_OF_LINE = 107;
 const int OBJ_CREATION_LINE = 105;
 const int OBJ_DELETION_LINE = 20;
 
-
+/** Global variables */
 Mat baseframe;
 Mat untouch_frame;
 
@@ -23,9 +26,13 @@ Mat sketchMat;
 vector<Point2d> prevPoints;
 Scalar stain[10];
 vector<Point2d> c;
-/** Customer identification number */
+/** unique Customer identification number */
 static int mu_uid = 0;
 
+/**
+ @class Customer
+ @discussion Customer class with attributes to track positions, bounding rectangles and times an object is in the line
+ */
 class Customer
 {
 public:
@@ -43,7 +50,7 @@ deque<Customer> track_customer;
 
 /**  @function MAIN */
 int main() {
-    /** Default values for @function encapsulateObjects */
+    /** Default values for function encapsulateObjects */
     int sigma = 3;
     int smoothType = MEDIAN;
     ///smoothType = BILATERAL_FILTER;
@@ -100,21 +107,17 @@ int main() {
             cap >> frame;
         //        cap >> frame;
         
-        int CAP_CURRENT_FRAME = (int)cap.get(CV_CAP_PROP_POS_FRAMES);
-        if (CAP_CURRENT_FRAME == 200)
-        {
-            cout << "------------------------\n\n";
-            ///continue;
-        }
-        
-        if (!frame.data)
+        if(!frame.data)
             return -1;
         
-        cout << "running frame: " << CAP_CURRENT_FRAME << "\n";
-        cout << "------------------------\n\n";
+        int CAP_CURRENT_FRAME = (int)cap.get(CV_CAP_PROP_POS_FRAMES);
+        if (BISECT_F2FRAME)
+        {
+            cout << "running frame: " << CAP_CURRENT_FRAME << "\n";
+            cout << "------------------------\n\n";
+        }
         
-        
-        /**  @brief set regions of interest (ROI) to scan for objects  */
+        /**  @abstract set regions of interest (ROI) to scan for objects  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
         customer_line = frame(MOLD_CUSTOMERLINE);
         customer_line.copyTo(untouch_frame);
@@ -123,25 +126,25 @@ int main() {
         sprintf(buffer, "%6d", CAP_CURRENT_FRAME);
         putLabel(displays, buffer, Point(30,20), 6, Scalar2(76,153,0));
         
-        /**  @function @brief
-         encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE)*/
+        /** @brief ignore returning values when detecting items on conveyor */
         encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
+        /** @brief  hold all customers detected in current frame */
         deque<Customer> new_detected =
         encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
         
+        /** @brief  linkCustomers pushes currently detected to its respective customer in the list, create if is a new customer */
         linkCustomers(&new_detected, &track_customer);
         
-        
-        for (int i = 0; i < track_customer.size(); i++)  /**  @note puts labels on Customer */
+        /**  @brief put uid label on Customers in track customer mode */
+        for (int i = 0; i < track_customer.size(); i++)
         {
-            char identifier[100];
-            sprintf(identifier, " C%d", track_customer[i].id);
             if (track_customer[i].track)
             {
-                putLabel(customer_line, identifier, track_customer[i].bounding.back().tl()/*track_customer[i].position.back()*/, 3.5, paint_royal_blue);
+                char identifier[20];
+                sprintf(identifier, " C%d", track_customer[i].id);
+                putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 3.5, paint_royal_blue);
             }
         }
-        
         
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
         createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );;
@@ -173,7 +176,6 @@ int main() {
  @function customerList_add
  @param ttcustomer an instance of Customer
  @see overloaded customerList_add(deque<Customer> customers)
- @return void
  */
 void customerList_add( Customer ttcustomer)
 {
@@ -186,7 +188,7 @@ void customerList_add( Customer ttcustomer)
 /**
  Instantiates newly detected objects
  @function customerList_add
- @param ttcustomer a queue of new Customer instances
+ @param ttcustomers a queue of new Customer instances
  @see overloaded of customerList_add
  @return size of customer list
  */
@@ -201,8 +203,11 @@ unsigned int customerList_add(deque<Customer> ttcustomers)
 /**
  Will push new customer into its respective already IDed customer. If new, then create new customer
  @function encapsulateObjects
- @param *instanceROI pointer to area of interest where we want to find the objects
- @param *baseROI pointer to the area of interest with no objects present i.e. the background
+ @code encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject,
+    int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE);
+ @endcode
+ @param instanceROI pointer to area of interest where we want to find the objects
+ @param baseROI pointer to the area of interest with no objects present i.e. the background
  @param METHOD which object are we looking for? e.g. OBJ_ITEM? OBJ_CUSTOMER?
  @param KSIZE aperture liner size; must be odd and greater than 1 i.e. 3,5,7 ...
  @param SIGMA Gassian kernel standard deviation in X
@@ -211,7 +216,7 @@ unsigned int customerList_add(deque<Customer> ttcustomers)
  @see customerList_add(Customer custom)
  @return array of customers and other detected objects
  */
-deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )
+deque<Customer> encapsulateObjects( Mat* instanceROI, Mat* baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )
 {
     Scalar COLOR;
     Mat currentgray, basegray, differs;
@@ -283,17 +288,17 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
     }
     
     
-    /**   @brief merge overlapping boxes,  @return number of boxes
-     @note might be better to merge contained boxes only i.e
-     @note A is a subset of B if every element of A is contained in B */
+    /**  @brief merge overlapping boxes, returns number of boxes
+     @warning might be better to merge contained boxes only
+     @note i.e: A is a subset of B if every element of A is contained in B */
     int overlapContours_size = mergeOverlappingBoxes(&boundRect, *instanceROI, &boundRectOut, METHOD);
     
     deque<Customer> croppedObject;
     Rect r;
     float areaRs = 0, density_conveyor = 0;
-    float instanceRows = (instanceROI->rows);
-    float instanceCols = (instanceROI->cols);
-    Rect over_frame(0,0, instanceCols, instanceRows);
+    float ROI_rows = (instanceROI->rows);
+    float ROI_cols = (instanceROI->cols);
+    Rect over_frame(0,0, ROI_cols, ROI_rows);
     /**  Draw polygonal contour + bonding rects + circles */
     for( int i = 0; i< overlapContours_size/*contours_eo.size()*/; i++ )
     {
@@ -361,7 +366,6 @@ deque<Customer> encapsulateObjects( Mat *instanceROI, Mat *baseROI, int METHOD, 
  @param current_detected the objects detected in current frame
  @param anchor_customer deque List of customers already in list
  @see customerList_add(Customer custom)
- @return void
  */
 void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer)
 {
@@ -414,7 +418,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         }
     }
     
-    /** @var AconnectsD @var DconnectsA */
+    /** @var AconnectsD 
+        @var DconnectsA */
     /** AconnectsD takes the index linking from Customer list to the newly (D)etected object
      DconnectsA takes the link from newly (D)etected to the (A)nchor Customer's list
      e.g. in other words we are mapping from set A to set D and viceversa
@@ -444,23 +449,26 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         delta.push_back(true);
     }
     
-    /**  @code 2D array, if you find smallest double value is clearly 1.1 at intersection a1xd2. a1 connects to d2
-     a1    a2    a3     a4
-     +------------------------+
-     d1 | 2.3 | 1.5 | 7.3 | 3.5  |
-     |- - - - - - - - - - - - - -|
-     d2 | 1.1 | 3.5 | 9.1 | 3.3  |
-     |- - - - - - - - - - - - - -|
-     d3 | 4.5 | 6.2 | 7.1 | 2.7  |
-     +------------------------+
+    
+    /** temporary holder for a or d elements in A or D set */
+    int _a_ = -1, _d_ = -1;
+    /**
+     @discussion 2D array, if you find smallest double value is clearly 1.1 at intersection a1xd2. a1 connects to d2
+                                    a1    a2    a3     a4
+                                +------------------------+
+                            d1 | 2.3 | 1.5 | 7.3 | 3.5  |
+                                 |- - - - - - - - - - - - - -|
+                            d2 | 1.1 | 3.5 | 9.1 | 3.3  |
+                                 |- - - - - - - - - - - - - -|
+                            d3 | 4.5 | 6.2 | 7.1 | 2.7  |
+                                +------------------------+
      next smallest distance is 1.5 at intersection a2xd1, a2 connects d1
-     @note notice we keep connecting to the min(ROW,COLS) as we have a one-to-one mapping, in this case min(3,4) as we have only 3 rows
+     notice we keep connecting to the min(ROW,COLS) as we have a one-to-one mapping, in this case min(3,4) as we have only 3 rows
      next smallest is 2.3 at intersection a1xd1 but notice that we cannot connect either a1 or d1 because they are already connected, therefore
      find next smallest, which is 2.7 at intersection a4xd3. a4 connects to d3
      We have connected 3 and we cannot map any more leaving us with 'a3' disconnected,
      therefore, it might need initialization of new customer
-     @endcode */
-    int _a_ = -1, _d_ = -1; /* temporary holders for a and d elements */
+    */
     for (int next_min = 0; next_min < min(SIZECurrent, SIZEAnchor); next_min++)
     {  /** finds all possible connecting objects from customer list to newly detected objects */
         /** finds the first minimum value in 2D vector. The position
@@ -509,14 +517,15 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             anchor_customer->at(a).bounding.push_back(current_detected->at(AconnectsD[a]).bounding.back());
             anchor_customer->at(a).position.push_back(current_detected->at(AconnectsD[a]).position.back());
         }
-        Customer TEMP = anchor_customer->at(a);
-        TMP = TEMP.position.back();
-        TMPminus1 = TEMP.position[TEMP.position.size()-2];
-        cout << "[" << TMPminus1.x/10 << ", " << TMPminus1.y/10 << "]\n";
-        cout << "[" << TMP.x/10 << ", " << TMP.y/10 << "]\n";
-        printf("connections %d to %d\n\n", a, AconnectsD[a]);
+        if (SHOW_P2POINT_CONNECTS) {
+            Customer TEMP = anchor_customer->at(a);
+            TMP = TEMP.position.back();
+            TMPminus1 = TEMP.position[TEMP.position.size()-2];
+            cout << "[" << TMPminus1.x/10 << ", " << TMPminus1.y/10 << "]\n";
+            cout << "[" << TMP.x/10 << ", " << TMP.y/10 << "]\n";
+            printf("connections %d to %d\n\n", a, AconnectsD[a]);
+        }
     }
-    puts("");
     
     /**  Create new customers when there is a detected object that is introduced in the current frame
      i.e. a newly detected object which wasnt connected to a respective object in Customer list */
@@ -533,8 +542,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     }
     
     
-    /**  @code */
-    /**  @var CSIZE: number of customer positions to push into arrayList of Customers */
+    /**  @brief CSIZE: number of customer positions to push into arrayList of Customers */
     const unsigned int CSIZE = (int)min(SIZECurrent, SIZEAnchor);
     /**  @brief push back updated position of customers into array of position in customer */
     for (int linker_index = 0; linker_index < CSIZE; linker_index++)
@@ -551,7 +559,6 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         
         /**  @brief stop tracking object when customer has checked out */
     }
-    /**  @endcode */
 }
 
 
@@ -611,7 +618,6 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
  @param noObjects_TDOF number of objects to be tracked in mask. TDOF(ToDisplayOpticalFlow)
  @see where is called, in function encapsulateObjects
  @see OPTFLOW_ON switch at top
- @return null
  */
 void CustomerOpticalFlow(int noObjects_TDOF)
 {
@@ -619,7 +625,6 @@ void CustomerOpticalFlow(int noObjects_TDOF)
     vector<Point2d> b;
     int tmpb = 0;
     
-    /** @code */
     /** Tracks a customer using a line on mask */
     if ( prevPoints.size() == c.size() )
     {
@@ -642,8 +647,6 @@ void CustomerOpticalFlow(int noObjects_TDOF)
         for (int i = 0; i < noObjects_TDOF; i++ )
             line(sketchMat, a[i], b[i], stain[i], 2, 4);
     }
-    
-    /** @endcode */
 }
 
 

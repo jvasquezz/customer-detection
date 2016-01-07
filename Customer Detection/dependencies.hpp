@@ -19,8 +19,16 @@
 /** namespaces */
 using namespace::inscribe;
 
-enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER};
-enum {OBJECT_ITEM, OBJECT_CUSTOMER};
+/*!
+ * @typedef BLUR_METHOD
+ * @brief A list of blur method types
+ * @constant GAUSSIAN GaussianBlur method used
+ * @constant BLUR normal blur() method used
+ * @constant MEDIAN uses medianBlur method, recommended
+ * @constant BILATERAL_FILTER heavy computational filter
+ */
+typedef enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER} SMOOTHTYPE;
+typedef enum {OBJECT_ITEM, OBJECT_CUSTOMER} OBJ_RECOGNIZE;
 
 /** Function Headers (PROTOTYPES) */
 class Customer;
