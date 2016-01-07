@@ -13,6 +13,11 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <array>
+#include "inscribe.cpp"
+
+/** namespaces */
+using namespace::inscribe;
 
 enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER};
 enum {OBJECT_ITEM, OBJECT_CUSTOMER};
@@ -28,6 +33,11 @@ void CustomerOpticalFlow(int noObjects_TDOF);
 
 
 extern deque<Customer> track_customer;
+
+
+//Scalar Scalar2(int,int,int);
+//void putLabel(Mat img, char* labelText, Point startPoint, double letters, Scalar ground_color);
+//void putLabel(Mat img, char* labelText, Point startPoint, int letters);
 
 extern int sigma;
 extern int smoothType;
@@ -49,6 +59,8 @@ extern const int INSTANT_DISPLACEMENT_TOLERANCE;
 extern const int CART_DETECTED_AT_START;
 extern const int OBJ_CREATION_LINE;
 extern const int OBJ_DELETION_LINE;
+extern bool SHOW_EDGES;
+extern bool SHOW_DIFF;
 
 extern Rect MOLD_CUSTOMERLINE_WIDE;
 extern Rect MOLD_CUSTOMERLINE;
@@ -61,12 +73,20 @@ const String VIDEOPATH = "/Users/drifter/Desktop/capstone/ver.mp4";
 const String BASEFRAME_DIR = "/Users/drifter/Dropbox/Feloh/Customer Detection/baseframe.png";
 
 
-/**  Scalar COLORS */
+/**  Scalar COLORS @constructor Scalar(B,G,R) */
+Scalar paint_sea(204,102,0);
+Scalar paint_salmon(114,128,250);
+Scalar paint_maroon(0,0,128);
+Scalar paint_dark_red = Scalar(34,34,178);
+Scalar paint_royal_orange(65,105,255);
+Scalar paint_royal_blue(255,105,65);
+Scalar paint_indigo(130,0,75);
 Scalar paint_yellow = Scalar(0,255,255);
 Scalar paint_green = Scalar(0,255,0);
 Scalar paint_red = Scalar(0,0,255);
 Scalar paint_blue = Scalar(255,0,0);
-Scalar paint_purple(184, 114, 216);
+Scalar paint_pink(184, 114, 216);
+Scalar paint_purple(216, 114, 184);
 Scalar paint_ade004(173,224,4);
 Scalar paint_lightGREEN(102,255,102);
 Scalar paint_lightORANGE(153,204,255);

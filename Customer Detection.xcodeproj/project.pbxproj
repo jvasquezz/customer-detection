@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FE0EF9561C2C240C00B49547 /* ORmethods.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE0EF9551C2C240C00B49547 /* ORmethods.cpp */; };
-		FE84653C1C23440D00274A19 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE84653B1C23440D00274A19 /* main.cpp */; };
+		FE816F1B1C3E3EEC000A610C /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE816F1A1C3E3EEC000A610C /* main.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,9 +24,10 @@
 
 /* Begin PBXFileReference section */
 		FE0EF9551C2C240C00B49547 /* ORmethods.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ORmethods.cpp; sourceTree = "<group>"; };
+		FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inscribe.cpp; sourceTree = "<group>"; };
+		FE816F1A1C3E3EEC000A610C /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		FE8465381C23440D00274A19 /* Customer Detection */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Customer Detection"; sourceTree = BUILT_PRODUCTS_DIR; };
-		FE84653B1C23440D00274A19 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		FE8465421C234EE300274A19 /* this.dependencies.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = this.dependencies.hpp; sourceTree = "<group>"; };
+		FE8465421C234EE300274A19 /* dependencies.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dependencies.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,8 +60,9 @@
 		FE84653A1C23440D00274A19 /* Customer Detection */ = {
 			isa = PBXGroup;
 			children = (
-				FE84653B1C23440D00274A19 /* main.cpp */,
-				FE8465421C234EE300274A19 /* this.dependencies.hpp */,
+				FE8465421C234EE300274A19 /* dependencies.hpp */,
+				FE816F1A1C3E3EEC000A610C /* main.cpp */,
+				FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */,
 				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
 			);
 			path = "Customer Detection";
@@ -123,8 +124,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FE84653C1C23440D00274A19 /* main.cpp in Sources */,
-				FE0EF9561C2C240C00B49547 /* ORmethods.cpp in Sources */,
+				FE816F1B1C3E3EEC000A610C /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

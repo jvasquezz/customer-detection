@@ -1,6 +1,6 @@
 dependencies: \
   /Users/drifter/Documents/customer-detection/Customer\ Detection/main.cpp \
-  /Users/drifter/Documents/customer-detection/Customer\ Detection/this.dependencies.hpp \
+  /Users/drifter/Documents/customer-detection/Customer\ Detection/dependencies.hpp \
   /Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h \
   /usr/local/include/opencv/highgui.h \
   /usr/local/include/opencv2/core/core_c.h \
@@ -48,4 +48,5 @@ dependencies: \
   /Users/drifter/Dropbox/Feloh/documents-export-2015-12-01/Software/V1/jacob-ppl-carts/include/opencv2/nonfree/features2d.hpp \
   /usr/local/include/opencv2/features2d/features2d.hpp \
   /usr/local/include/opencv2/features2d.hpp \
-  /usr/local/include/opencv2/videoio/videoio.hpp
+  /usr/local/include/opencv2/videoio/videoio.hpp \
+  /Users/drifter/Documents/customer-detection/Customer\ Detection/inscribe.cpp
