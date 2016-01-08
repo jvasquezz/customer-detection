@@ -1,22 +1,41 @@
 
 #include "dependencies.hpp"
 
+/** Default smooth type to run application, change using spacebar */
+Smooth_tier smoothTier = GAUSSIAN;
 
-/** Variable flags */
+/** Verbose variable flags */
 bool SHOW_OVERLAPPING_BOXES = false;
 bool SHOW_P2POINT_CONNECTS = false;
 bool BISECT_F2FRAME = false;
-bool SHOW_EDGES = true;
+bool SHOW_EDGES = false;
 bool OPTFLOW_ON = false;
 bool SHOW_DIFF = false;
 bool verbose = 0;
 bool verbose2 = 0;
 
+
+/** Aveg = 246  +-16  (try 2 standard deviations?) */
+const int Z1_CART_SIZE_RANGES[2] = {215,500};
+const int Z1_CROSSOVER_LINE = 42;
+/** Aveg = 210  +-6 (try 2 sd?)
+    Max range (450-500) */
+const int Z2_CART_SIZE_RANGES[2] = {198,500};
+const int Z2_CROSSOVER_LINE = 84;
+/** Aveg = 215  +-4 */
+const int Z3_CART_SIZE_RANGES[2] = {207,550};
+
+
 /** Threshold constant variables */
-const int INSTANT_DISPLACEMENT_TOLERANCE = 150;
-const int CART_DETECTED_AT_START_OF_LINE = 107;
-const int OBJ_CREATION_LINE = 105;
+const int INSTANT_DISPLACEMENT_TOLERANCE = 250;
+const int CART_DETECTED_AT_START_OF_LINE = 100;
+const int OBJ_CREATION_LINE = 100;
 const int OBJ_DELETION_LINE = 20;
+const int MIN_AREA = 22000;
+/**  @brief set value to desired FPS rate, recommended 10-15 */
+/**  @discussion The human eye and its brain interface, the human visual system, can
+    process 10 to 12 separate images per second, perceiving them individually */
+const int FPS_DESIRED_FREQUENCY = 10;
 
 /** Global variables */
 Mat baseframe;
@@ -38,6 +57,7 @@ class Customer
 public:
     int id;
     bool track;
+    int type; ///type of object detected
     vector<MatND> histog;
     vector<Point2d> position;
     vector<Rect> bounding;
@@ -51,18 +71,18 @@ deque<Customer> track_customer;
 /**  @function MAIN */
 int main() {
     /** Default values for function encapsulateObjects */
-    int sigma = 3;
-    int smoothType = MEDIAN;
-    ///smoothType = BILATERAL_FILTER;
+    int sigma = 3;  ///default sigma at 3
+    Smooth_tier smoothType = smoothTier;
     int ksize = (sigma*5)| 1;
     
     // insert code here...
     VideoCapture cap;
     String capstone_dir = "/Users/drifter/Desktop/capstone/";
     
-    cap.open(capstone_dir+"30FPSb.mp4");
+    cap.open(capstone_dir+"Jan-8f10FPS.mp4");
     const double FPS_CAP=cap.get(CV_CAP_PROP_FPS);
     /** more vid files:
+     @e Jan-8e_Preprocess10FPS.mp4
      @a SEGMENTA_720P_20FPS.mp4
      @c 20FPS720P1416.mp4
      @b 10FPS.mp4
@@ -78,13 +98,16 @@ int main() {
     /**  mold: A hollow form or matrix for shaping a segment from frame */
     /**  @constructor Rect
      Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
+    /** @fix CHANGE AREA OF INTEREST ROI */
     Rect MOLD_CUSTOMERLINE_WIDE(0, baseframe.rows/5,baseframe.cols,baseframe.rows/2);
     Rect MOLD_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
+    Rect MOLD_CUSTOMERLINE_NARROW(0,baseframe.rows/2.45,1280,113);  ////113 vs 131
     Rect MOLD_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,120);
+
     
     int thresh = 100;
     Mat line_print, belt_print, frame, customer_line;
-    line_print = baseframe(MOLD_CUSTOMERLINE);
+    line_print = baseframe(MOLD_CUSTOMERLINE_NARROW);
     belt_print = baseframe(MOLD_CONVEYOR_BELT);
     
     line_print.copyTo(sketchMat);
@@ -97,18 +120,17 @@ int main() {
     stain[5] = paint_ade004;
     stain[6] = paint_blue;
     
-    vector<MatND> past_vHistograms;
+    /** @redundance vector<MatND> past_vHistograms; */
     
     /**  @brief main loop */
     for(;;)
     {
-        /** Skip frames in order to use video as it if it was different rate of FPS */
-        for(int i = 0; i < (int)FPS_CAP/4; i++)
+        /** Skip frames in order to use video as it if it was different rate of FPS, */
+        for(int i = 0; i < (int)FPS_CAP/FPS_DESIRED_FREQUENCY; i++)
             cap >> frame;
-        //        cap >> frame;
         
         if(!frame.data)
-            return -1;
+            continue;
         
         int CAP_CURRENT_FRAME = (int)cap.get(CV_CAP_PROP_POS_FRAMES);
         if (BISECT_F2FRAME)
@@ -119,7 +141,7 @@ int main() {
         
         /**  @abstract set regions of interest (ROI) to scan for objects  */
         Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
-        customer_line = frame(MOLD_CUSTOMERLINE);
+        customer_line = frame(MOLD_CUSTOMERLINE_NARROW);
         customer_line.copyTo(untouch_frame);
         Mat displays = frame(MOLD_CUSTOMERLINE_WIDE);
         char buffer[20];
@@ -147,8 +169,9 @@ int main() {
         }
         
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
-        createTrackbar( "Sigma", "Laplacian", &sigma, 15, 0 );;
-        
+        ///sigma = 20;
+        createTrackbar( "Sigma", "Laplacian", &sigma, 30, 0 );;
+
         if(verbose)
             printf("Sigma value %d\n", sigma);
         
@@ -157,6 +180,16 @@ int main() {
             imshow("sketchMat", sketchMat);
         
         int c = waitKey(1);
+        
+        /** @discussion adds PAUSE key to video */
+        if (c == 'p')
+        {
+            char PAUSED[20] = "PAUSED";
+            putLabel(displays, PAUSED, Point(0,0), 6.3, paint_sea);
+            imshow("customer_line", displays);
+            waitKey(0);
+        }
+        
         if( c == ' ' )
         {
             smoothType = smoothType == GAUSSIAN ? BLUR : smoothType == BLUR ? MEDIAN : smoothType == MEDIAN ? BILATERAL_FILTER : GAUSSIAN;
@@ -216,7 +249,8 @@ unsigned int customerList_add(deque<Customer> ttcustomers)
  @see customerList_add(Customer custom)
  @return array of customers and other detected objects
  */
-deque<Customer> encapsulateObjects( Mat* instanceROI, Mat* baseROI, int METHOD, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE )
+deque<Customer>
+encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZE, int SIGMA, int THRESH, Smooth_tier SMOOTHTYPE )
 {
     Scalar COLOR;
     Mat currentgray, basegray, differs;
@@ -279,7 +313,7 @@ deque<Customer> encapsulateObjects( Mat* instanceROI, Mat* baseROI, int METHOD, 
         approxPolyDP( Mat(contours_eo[i]), contours_poly[i], 10, true );
         boundRect[i] = boundingRect( Mat(contours_poly[i]) );
         minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
-        if( (radius[i] > 35) && (METHOD == OBJECT_CUSTOMER) )
+        if( (radius[i] > 35) && (METHOD == OBJECT_CUSTOMER) )  /* change 35 to a const variable */
         {
             circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
             circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
@@ -390,9 +424,13 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     {
         if (anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE)
         {
+            /** write  object to file */
             anchor_customer->erase(anchor_customer->begin()+i);
             anchor_customer->shrink_to_fit();
+             /** @fix maybe update size variables, i.e. SIZEAnchor and SIZECurrent */
+            /**  @fix set a flag of object that I deleted, the one I threw away should be checked */
             return;
+            
         }
     }
     
@@ -582,13 +620,14 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         /**  @brief filter boxes, ignore too small or big boxes when detecting customers */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
-                if((inputBoxes->at(i).height * inputBoxes->at(i).width) < 25000)
+//                if((inputBoxes->at(i).height * inputBoxes->at(i).width) < MIN_AREA)
+                if(inputBoxes->at(i).width < 215)
                     continue;
                 break;
             case OBJECT_ITEM:
                 break;
         } /**  end switch */
-        
+
         Rect box = inputBoxes->at(i) + scaleFactor;
         box.height = image.rows;
         /**  Draw filled bounding boxes on mask */
@@ -648,7 +687,3 @@ void CustomerOpticalFlow(int noObjects_TDOF)
             line(sketchMat, a[i], b[i], stain[i], 2, 4);
     }
 }
-
-
-
-

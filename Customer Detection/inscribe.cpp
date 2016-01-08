@@ -16,7 +16,7 @@
 
 
 namespace inscribe
-{
+{    
     /**
      Makes Scalar to RGB instead of BGR
      @function Scalar2

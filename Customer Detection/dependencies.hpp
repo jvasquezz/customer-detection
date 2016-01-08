@@ -18,24 +18,28 @@
 
 /** namespaces */
 using namespace::inscribe;
+using namespace::std;
+using namespace::cv;
 
-/*!
- * @typedef BLUR_METHOD
+/**
+ * @typedef Smooth_tier
  * @brief A list of blur method types
  * @constant GAUSSIAN GaussianBlur method used
  * @constant BLUR normal blur() method used
  * @constant MEDIAN uses medianBlur method, recommended
  * @constant BILATERAL_FILTER heavy computational filter
  */
-typedef enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER} SMOOTHTYPE;
-typedef enum {OBJECT_ITEM, OBJECT_CUSTOMER} OBJ_RECOGNIZE;
+typedef enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER} Smooth_tier;
+typedef enum {OBJECT_ITEM, OBJECT_CUSTOMER} Pick_object;
+extern Smooth_tier smoothTier;
+
 
 /** Function Headers (PROTOTYPES) */
 class Customer;
 void customerList_add( Customer ttcustomer);
 unsigned int customerList_add(deque<Customer> ttcustomers);
 void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer);
-deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE/*MEDIAN*/);
+deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, Pick_object targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, Smooth_tier SMOOTHTYPE/*MEDIAN*/);
 int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
 void CustomerOpticalFlow(int noObjects_TDOF);
 
@@ -48,7 +52,7 @@ extern deque<Customer> track_customer;
 //void putLabel(Mat img, char* labelText, Point startPoint, int letters);
 
 extern int sigma;
-extern int smoothType;
+//extern int smoothType;
 extern int ksize;
 
 extern VideoCapture cap;
