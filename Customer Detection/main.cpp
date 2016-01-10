@@ -10,7 +10,7 @@ Smooth_tier smoothTier = GAUSSIAN;
 
 /** Verbose variable flags */
 bool SHOW_OVERLAPPING_BOXES = false;
-bool SHOW_P2POINT_CONNECTS = false;
+bool SHOW_P2POINT_CONNECTIONS = false;
 bool BISECT_F2FRAME = false;
 bool SHOW_EDGES = false;
 bool OPTFLOW_ON = false;
@@ -485,31 +485,35 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         return;
     }
     
+    vector<bool> BRANDED_FOR_DELETION;
     /**  delete customers from list when they have finished shopping i.e. they crossed threshold */
     for (int i = 0; i < SIZEAnchor; i++)
     {
+        BRANDED_FOR_DELETION.push_back(false);
         if ((anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE) /*|| (anchor_customer->at(i).idle > IDLE_LIMIT)*/)
         {
+            /** record time customer reaches end of line */
             time(&anchor_customer->at(i).last_recorded_time);
             
-            /** @back */
-            fstream myFile ("data.bin", ios::in | ios::out | ios::binary);
-//            if (!myFile.is_open())
-//            {
-//                cout <<"ERROR OPENINGFILE";
-//                break;
-//            }
-
-            myFile.write((char*)&anchor_customer->at(i),sizeof(Customer));
-            myFile.seekg(0);    /** read from beginning */
+            /** object's file destination naming */
+            char filename[20];
+            sprintf(filename, "customer%d.bin", anchor_customer->at(i).id);
+            fstream myFile(filename, ios::trunc | ios::out | ios::binary);
+            /** check if file was opened correctly */
+            if (!myFile.is_open())
+            {
+                cout << "error opening file: " << "see line "<< __LINE__ << '\n';
+                continue;
+            }
             
             /** write  object to file */
-            anchor_customer->erase(anchor_customer->begin()+i);
-            anchor_customer->shrink_to_fit();
-            /** @fix maybe update size variables, i.e. SIZEAnchor and SIZECurrent */
-            /**  @fix set a flag of object that I deleted, the one I threw away should be checked */
-            /** @fix linkCustomers(current_detected, anchor_customer); */
-            return;
+            myFile.write((char*)&anchor_customer->at(i), sizeof(Customer));
+            myFile.seekg(0);    /** read from beginning */
+            myFile.close();     /** close file */
+
+            /**  @fixed set a flag of object that I deleted, the one I threw away should be checked */
+            /** release object from vector array and shrink vector when finished processing current frame */
+            BRANDED_FOR_DELETION[i] = true;
         }
     }
     
@@ -529,6 +533,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
      The 2D array serves to save the index of the Customer list vs the newly detected list indexes */
     for (int i = 0; i < SIZEAnchor; i++)
     {
+        if (BRANDED_FOR_DELETION[i])
+            continue;
         for (int k = 0; k < SIZECurrent; k++)
         { /** save all distances */
             distance_obj_to_obj[i][k] = norm(anchor_customer->at(i).position.back() - current_detected->at(k).position.back());
@@ -569,14 +575,14 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     int _a_ = -1, _d_ = -1;
     /**
      @discussion 2D array, if you find smallest double value is clearly 1.1 at intersection a1xd2. a1 connects to d2
-     a1    a2    a3     a4
-     +------------------------+
-     d1 | 2.3 | 1.5 | 7.3 | 3.5  |
-     |- - - - - - - - - - - - - -|
-     d2 | 1.1 | 3.5 | 9.1 | 3.3  |
-     |- - - - - - - - - - - - - -|
-     d3 | 4.5 | 6.2 | 7.1 | 2.7  |
-     +------------------------+
+                                         a1    a2    a3     a4
+                                     +------------------------+
+                                 d1 | 2.3 | 1.5 | 7.3 | 3.5  |
+                                      |- - - - - - - - - - - - - -|
+                                 d2 | 1.1 | 3.5 | 9.1 | 3.3  |
+                                      |- - - - - - - - - - - - - -|
+                                 d3 | 4.5 | 6.2 | 7.1 | 2.7  |
+                                     +------------------------+
      next smallest distance is 1.5 at intersection a2xd1, a2 connects d1
      notice we keep connecting to the min(ROW,COLS) as we have a one-to-one mapping, in this case min(3,4) as we have only 3 rows
      next smallest is 2.3 at intersection a1xd1 but notice that we cannot connect either a1 or d1 because they are already connected, therefore
@@ -592,6 +598,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         n_mins = 1000, _a_ = -1, _d_ = -1;
         for (int a = 0; a < SIZEAnchor; a++)
         {
+            if (BRANDED_FOR_DELETION[a])
+                continue;
             /** do not find any more connection for a row which is already connected */
             if (alpha[a] == true)
             {
@@ -623,7 +631,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     /** Push new position of newly detected into Customer list
      ignore when not found new connection for a given customer i.e. keeping previous last position
      @note that if the new detected displaces too much without detecting it might be difficult to relate this objects together */
-    for (int a = 0; a < AconnectsD.size()/*min(SIZECurrent,SIZEAnchor)*//*connected.size()*/; a++)
+    for (int a = 0; a < AconnectsD.size(); a++)
     {
         Point TMP, TMPminus1;
         if (AconnectsD[a] != -1 && distance_obj_to_obj[a][AconnectsD[a]] < INSTANT_DISPLACEMENT_TOLERANCE)
@@ -638,7 +646,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         //        else
         //            anchor_customer->at(a).idle = 0;
         
-        if (SHOW_P2POINT_CONNECTS) {
+        if (SHOW_P2POINT_CONNECTIONS) {
             Customer TEMP = anchor_customer->at(a);
             TMP = TEMP.position.back();
             TMPminus1 = TEMP.position[TEMP.position.size()-2];
@@ -683,6 +691,16 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             }
         }
         /**  @brief stop tracking object when customer has checked out */
+    }
+    
+    /** delete and free space in vector of customers */
+    for (int i = 0; i < SIZEAnchor; i++)
+    {
+        if (BRANDED_FOR_DELETION[i])
+        {
+            anchor_customer->erase(anchor_customer->begin()+i);
+            anchor_customer->shrink_to_fit();
+        }
     }
 }
 
