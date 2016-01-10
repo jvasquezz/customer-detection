@@ -5,42 +5,21 @@
 Smooth_tier smoothTier = GAUSSIAN;
 
 /** Verbose variable flags */
-bool SHOW_OVERLAPPING_BOXES = true;
+bool SHOW_OVERLAPPING_BOXES = false;
 bool SHOW_P2POINT_CONNECTS = false;
 bool BISECT_F2FRAME = false;
-bool SHOW_EDGES = true;
+bool SHOW_EDGES = false;
 bool OPTFLOW_ON = false;
-bool SHOW_DIFF = true;
+bool SHOW_DIFF = false;
 bool verbose = 0;
 bool verbose2 = 0;
 
 
-/** threshold lines which divide the zones */
-/** use formula */
-
-//double y = 0.5357*x + 197.38;
-//const int Z1_CROSSOVER_LINE = 25.6;
-//const int Z2_CROSSOVER_LINE = 51.2;
-//const int Z3_CROSSOVER_LINE = 76.8;
-//const int Z4_CROSSOVER_LINE = 102.4;
-//
-//const int Z1_CART_SIZE_RANGES[2] = {220,500};
-//const int Z2_CART_SIZE_RANGES[2] = {200,500};
-//const int Z3_CART_SIZE_RANGES[2] = {246,500};
-//const int Z4_CART_SIZE_RANGES[2] = {290,500};
-//const int Z5_CART_SIZE_RANGES[2] = {290,500};
-
-/** Areas (Z) which the ROI is divided into */
-//const int Z1_CART_SIZE_RANGES[2] = {290,500};
-//const int Z1_CROSSOVER_LINE = 96;
-///** Aveg = 246  +-16  (try 2 standard deviations?) */
-//const int Z2_CART_SIZE_RANGES[2] = {246,500};
-//const int Z2_CROSSOVER_LINE = 64;
-///** Aveg = 210  +-6 (try 2 sd?)  -Max range (450-500) */
-//const int Z3_CART_SIZE_RANGES[2] = {200,500};
-//const int Z3_CROSSOVER_LINE = 32;
-///** Aveg = 215  +-4 */
-//const int Z4_CART_SIZE_RANGES[2] = {220,550};
+/** @remarks */
+/** use spreadsheet formula */
+/** find more data for more precise readings, with many sample points we can make our accuracy rate really high */
+/** this approach can use machine learning and we might use different equation at different times depending on best averages */
+/** @code double y = -1.78763782732825*(pow(10,-5))*pow(x,4) + 4.04896149117207*(pow(10,-3))*pow(x, 3) - 2.72770070216495*(pow(10,-1))*pow(x,2) + 5.44941813894911*(pow(10,0))*x + 2.15895787840160*(pow(10, 2)); */
 
 
 /** Threshold constant variables */
@@ -48,12 +27,12 @@ const int INSTANT_DISPLACEMENT_TOLERANCE = 250;
 const int CART_DETECTED_AT_START_OF_LINE = 100;
 const int OBJ_CREATION_LINE = 100;
 const int OBJ_DELETION_LINE = 15;
-const int MIN_AREA = 22000;
 /**  @brief set value to desired FPS rate, recommended 10-15 */
 /**  @discussion The human eye and its brain interface, the human visual system, can
-    process 10 to 12 separate images per second, perceiving them individually */
+ process 10 to 12 separate images per second, perceiving them individually */
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
+const int IDLE_LIMIT = 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -76,6 +55,7 @@ class Customer
 {
 public:
     int id;
+    int idle;
     bool track;
     int type; ///type of object detected
     vector<MatND> histog;
@@ -122,7 +102,7 @@ int main() {
     Rect ROI_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
     Rect ROI_CUSTOMERLINE_NARROW(0,baseframe.rows/2.45,1280,113);  ////113 vs 131 vs 145
     Rect ROI_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,112);
-
+    
     
     int thresh = 100;
     Mat line_print, belt_print, frame, customer_line;
@@ -142,8 +122,17 @@ int main() {
     /** @redundance vector<MatND> past_vHistograms; */
     
     /**  @brief main loop */
+    bool flags = true;
     for(;;)
     {
+        if (flags)
+        {
+            for (int i = 0; i < 23000; i++) {
+                cap.grab();
+            }
+            flags = false;
+        }
+        
         number_of_objects_detected = 0;
         /** Skip frames in order to use video as it if it was different rate of FPS, */
         for(int i = 0; i < (int)FPS_CAP/FPS_DESIRED_FREQUENCY; i++)
@@ -175,11 +164,11 @@ int main() {
         deque<Customer> new_detected =
         encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
         
-/** @fix */
-//        if (!number_of_objects_detected) {
-//            baseframe = frame;
-//            imshow("BASEFRAME",baseframe);
-//        }
+        /** @fix */
+        //        if (!number_of_objects_detected) {
+        //            baseframe = frame;
+        //            imshow("BASEFRAME",baseframe);
+        //        }
         
         /** @brief  linkCustomers pushes currently detected to its respective customer in the list, create if is a new customer */
         linkCustomers(&new_detected, &track_customer);
@@ -204,7 +193,7 @@ int main() {
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
         sigma = HARD_CODED_SIGMA;
         createTrackbar( "Sigma", "Laplacian", &sigma, 30, 0 );;
-
+        
         if(verbose)
             printf("Sigma value %d\n", sigma);
         
@@ -221,6 +210,19 @@ int main() {
             putLabel(displays, PAUSED, Point(0,0), 6.3, paint_sea);
             imshow("customer_line", displays);
             waitKey(0);
+        }
+
+        /** @abstract saves current image displayed */
+        if (c == 'w')
+        {
+            char SCREENSHOT[20];
+            sprintf(SCREENSHOT, "CF%d", CAP_CURRENT_FRAME);
+            stringstream ss;
+            ss<<SCREENSHOT<<".jpg";
+            string SS = ss.str();
+            imwrite(SS, displays);
+            putLabel(displays, SCREENSHOT, Point(0,0), 7, paint_indigo);
+            imshow("customer_line", displays);
         }
         
         if( c == ' ' )
@@ -270,7 +272,7 @@ unsigned int customerList_add(deque<Customer> ttcustomers)
  Will push new customer into its respective already IDed customer. If new, then create new customer
  @function encapsulateObjects
  @code encapsulateObjects(Mat* instanceROI, Mat* baseIMG, int targetObject,
-    int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE);
+ int KSIZE, int SIGMA, int THRESH, int SMOOTHTYPE);
  @endcode
  @param instanceROI pointer to area of interest where we want to find the objects
  @param baseROI pointer to the area of interest with no objects present i.e. the background
@@ -303,17 +305,16 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     differs = differs < 60;
     
     
-    
+    /**  @fix */
     /** if there is no objects in picture, update baseframe */
     Mat NonZero_Locations;
     findNonZero(differs, NonZero_Locations);
     Number_Of_Elements = (int)NonZero_Locations.total();
-
-    if (!Number_Of_Elements) {
+    
+    if (!Number_Of_Elements)
+    {
         imshow("BASE", baseframe);
     }
-
-    
     
     
     /** @bookmark */
@@ -328,7 +329,7 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     
     if(SHOW_DIFF && OBJECT_CUSTOMER == METHOD)
         imshow("differs39", differs);
-
+    
     
     Mat smoothed, laplace, result;
     if(SMOOTHTYPE == MEDIAN)
@@ -475,21 +476,22 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                 customerList_add(current_detected->at(i));
             }
         }
+        /** @fix linkCustomers(current_detected, anchor_customer); */
         return;
     }
     
     /**  delete customers from list when they have finished shopping i.e. they crossed threshold */
     for (int i = 0; i < SIZEAnchor; i++)
     {
-        if (anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE)
+        if ((anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE) /*|| (anchor_customer->at(i).idle > IDLE_LIMIT)*/)
         {
             /** write  object to file */
             anchor_customer->erase(anchor_customer->begin()+i);
             anchor_customer->shrink_to_fit();
-             /** @fix maybe update size variables, i.e. SIZEAnchor and SIZECurrent */
+            /** @fix maybe update size variables, i.e. SIZEAnchor and SIZECurrent */
             /**  @fix set a flag of object that I deleted, the one I threw away should be checked */
+            /** @fix linkCustomers(current_detected, anchor_customer); */
             return;
-            
         }
     }
     
@@ -515,8 +517,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         }
     }
     
-    /** @var AconnectsD 
-        @var DconnectsA */
+    /** @var AconnectsD
+     @var DconnectsA */
     /** AconnectsD takes the index linking from Customer list to the newly (D)etected object
      DconnectsA takes the link from newly (D)etected to the (A)nchor Customer's list
      e.g. in other words we are mapping from set A to set D and viceversa
@@ -549,21 +551,21 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     int _a_ = -1, _d_ = -1;
     /**
      @discussion 2D array, if you find smallest double value is clearly 1.1 at intersection a1xd2. a1 connects to d2
-                                    a1    a2    a3     a4
-                                +------------------------+
-                            d1 | 2.3 | 1.5 | 7.3 | 3.5  |
-                                 |- - - - - - - - - - - - - -|
-                            d2 | 1.1 | 3.5 | 9.1 | 3.3  |
-                                 |- - - - - - - - - - - - - -|
-                            d3 | 4.5 | 6.2 | 7.1 | 2.7  |
-                                +------------------------+
+     a1    a2    a3     a4
+     +------------------------+
+     d1 | 2.3 | 1.5 | 7.3 | 3.5  |
+     |- - - - - - - - - - - - - -|
+     d2 | 1.1 | 3.5 | 9.1 | 3.3  |
+     |- - - - - - - - - - - - - -|
+     d3 | 4.5 | 6.2 | 7.1 | 2.7  |
+     +------------------------+
      next smallest distance is 1.5 at intersection a2xd1, a2 connects d1
      notice we keep connecting to the min(ROW,COLS) as we have a one-to-one mapping, in this case min(3,4) as we have only 3 rows
      next smallest is 2.3 at intersection a1xd1 but notice that we cannot connect either a1 or d1 because they are already connected, therefore
      find next smallest, which is 2.7 at intersection a4xd3. a4 connects to d3
      We have connected 3 and we cannot map any more leaving us with 'a3' disconnected,
      therefore, it might need initialization of new customer
-    */
+     */
     for (int next_min = 0; next_min < min(SIZECurrent, SIZEAnchor); next_min++)
     {  /** finds all possible connecting objects from customer list to newly detected objects */
         /** finds the first minimum value in 2D vector. The position
@@ -612,6 +614,12 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             anchor_customer->at(a).bounding.push_back(current_detected->at(AconnectsD[a]).bounding.back());
             anchor_customer->at(a).position.push_back(current_detected->at(AconnectsD[a]).position.back());
         }
+        
+        //        if (AconnectsD[a] == -1)
+        //            anchor_customer->at(a).idle++;
+        //        else
+        //            anchor_customer->at(a).idle = 0;
+        
         if (SHOW_P2POINT_CONNECTS) {
             Customer TEMP = anchor_customer->at(a);
             TMP = TEMP.position.back();
@@ -673,23 +681,29 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
     Size scaleFactor(-10,-10); // To expand rectangles, i.e. increase sensitivity to nearby rectangles --can be anything
     for (int i = 0; i < inputBoxes->size(); i++)
     {
-
+        /** @current */
         Rect r = Rect(inputBoxes->at(i));
         Point2d centroid = Point2d(r.x + r.width / 2, r.y + r.height / 2);
         double x = centroid.x/10;
-        double y = 0.0158* pow(x,2) - 1.13*x + 220.71;
+        //double y = 0.0002* pow(x,3) - 0.0088 * pow(x,2) - 0.5194 * x + 220.71;
+        //double y = 0.0215 * pow(x,2) - 1.9131*x + 258.13;
+        //double y = -2E-05x4 + 0.004x3 - 0.2728x2 + 5.4494x + 215.9;
+        //double y = -1.78763782732825E-05x4 + 4.04896149117207E-03x3 - 2.72770070216495E-01x2 + 5.44941813894911E+00x + 2.15895787840160E+02;
+        double y = -1.78763782732825*(pow(10,-5))*pow(x,4) + 4.04896149117207*(pow(10,-3))*pow(x, 3) - 2.72770070216495*(pow(10,-1))*pow(x,2) + 5.44941813894911*(pow(10,0))*x + 2.15895787840160*(pow(10, 2));
         
-        //// double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
         /**  @brief filter boxes, ignore too small or big boxes when detecting customers */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
-                if((inputBoxes->at(i).width < y) || (inputBoxes->at(i).width > 500))
+                if((inputBoxes->at(i).width < y) || (inputBoxes->at(i).width > 450))
                     continue;
                 break;
             case OBJECT_ITEM:
                 break;
         } /**  end switch */
-
+        
+        if(OBJECT_CUSTOMER == MOCI)
+            ;  /** @breakpoint set breakpoint to see variables values */
+        
         Rect box = inputBoxes->at(i) + scaleFactor;
         box.height = image.rows;
         /**  Draw filled bounding boxes on mask */
