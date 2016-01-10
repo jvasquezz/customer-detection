@@ -5,37 +5,55 @@
 Smooth_tier smoothTier = GAUSSIAN;
 
 /** Verbose variable flags */
-bool SHOW_OVERLAPPING_BOXES = false;
+bool SHOW_OVERLAPPING_BOXES = true;
 bool SHOW_P2POINT_CONNECTS = false;
 bool BISECT_F2FRAME = false;
-bool SHOW_EDGES = false;
+bool SHOW_EDGES = true;
 bool OPTFLOW_ON = false;
-bool SHOW_DIFF = false;
+bool SHOW_DIFF = true;
 bool verbose = 0;
 bool verbose2 = 0;
 
 
-/** Aveg = 246  +-16  (try 2 standard deviations?) */
-const int Z1_CART_SIZE_RANGES[2] = {215,500};
-const int Z1_CROSSOVER_LINE = 42;
-/** Aveg = 210  +-6 (try 2 sd?)
-    Max range (450-500) */
-const int Z2_CART_SIZE_RANGES[2] = {198,500};
-const int Z2_CROSSOVER_LINE = 84;
-/** Aveg = 215  +-4 */
-const int Z3_CART_SIZE_RANGES[2] = {207,550};
+/** threshold lines which divide the zones */
+/** use formula */
+
+//double y = 0.5357*x + 197.38;
+//const int Z1_CROSSOVER_LINE = 25.6;
+//const int Z2_CROSSOVER_LINE = 51.2;
+//const int Z3_CROSSOVER_LINE = 76.8;
+//const int Z4_CROSSOVER_LINE = 102.4;
+//
+//const int Z1_CART_SIZE_RANGES[2] = {220,500};
+//const int Z2_CART_SIZE_RANGES[2] = {200,500};
+//const int Z3_CART_SIZE_RANGES[2] = {246,500};
+//const int Z4_CART_SIZE_RANGES[2] = {290,500};
+//const int Z5_CART_SIZE_RANGES[2] = {290,500};
+
+/** Areas (Z) which the ROI is divided into */
+//const int Z1_CART_SIZE_RANGES[2] = {290,500};
+//const int Z1_CROSSOVER_LINE = 96;
+///** Aveg = 246  +-16  (try 2 standard deviations?) */
+//const int Z2_CART_SIZE_RANGES[2] = {246,500};
+//const int Z2_CROSSOVER_LINE = 64;
+///** Aveg = 210  +-6 (try 2 sd?)  -Max range (450-500) */
+//const int Z3_CART_SIZE_RANGES[2] = {200,500};
+//const int Z3_CROSSOVER_LINE = 32;
+///** Aveg = 215  +-4 */
+//const int Z4_CART_SIZE_RANGES[2] = {220,550};
 
 
 /** Threshold constant variables */
 const int INSTANT_DISPLACEMENT_TOLERANCE = 250;
 const int CART_DETECTED_AT_START_OF_LINE = 100;
 const int OBJ_CREATION_LINE = 100;
-const int OBJ_DELETION_LINE = 20;
+const int OBJ_DELETION_LINE = 15;
 const int MIN_AREA = 22000;
 /**  @brief set value to desired FPS rate, recommended 10-15 */
 /**  @discussion The human eye and its brain interface, the human visual system, can
     process 10 to 12 separate images per second, perceiving them individually */
 const int FPS_DESIRED_FREQUENCY = 10;
+const int HARD_CODED_SIGMA = 20;
 
 /** Global variables */
 Mat baseframe;
@@ -48,6 +66,8 @@ vector<Point2d> c;
 /** unique Customer identification number */
 static int mu_uid = 0;
 
+unsigned int number_of_objects_detected;
+unsigned int Number_Of_Elements;
 /**
  @class Customer
  @discussion Customer class with attributes to track positions, bounding rectangles and times an object is in the line
@@ -95,20 +115,19 @@ int main() {
     baseframe = imread(BASEFRAME_DIR);
     namedWindow( "Laplacian", 0 );
     
-    /**  mold: A hollow form or matrix for shaping a segment from frame */
     /**  @constructor Rect
      Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
-    /** @fix CHANGE AREA OF INTEREST ROI */
-    Rect MOLD_CUSTOMERLINE_WIDE(0, baseframe.rows/5,baseframe.cols,baseframe.rows/2);
-    Rect MOLD_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
-    Rect MOLD_CUSTOMERLINE_NARROW(0,baseframe.rows/2.45,1280,113);  ////113 vs 131
-    Rect MOLD_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,120);
+    /** @fix CHANGE REGION (AREA) OF INTEREST ROI */
+    Rect ROI_CUSTOMERLINE_WIDE(0, baseframe.rows/5,baseframe.cols,baseframe.rows/2);
+    Rect ROI_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
+    Rect ROI_CUSTOMERLINE_NARROW(0,baseframe.rows/2.45,1280,113);  ////113 vs 131 vs 145
+    Rect ROI_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,112);
 
     
     int thresh = 100;
     Mat line_print, belt_print, frame, customer_line;
-    line_print = baseframe(MOLD_CUSTOMERLINE_NARROW);
-    belt_print = baseframe(MOLD_CONVEYOR_BELT);
+    line_print = baseframe(ROI_CUSTOMERLINE_NARROW);
+    belt_print = baseframe(ROI_CONVEYOR_BELT);
     
     line_print.copyTo(sketchMat);
     
@@ -125,6 +144,7 @@ int main() {
     /**  @brief main loop */
     for(;;)
     {
+        number_of_objects_detected = 0;
         /** Skip frames in order to use video as it if it was different rate of FPS, */
         for(int i = 0; i < (int)FPS_CAP/FPS_DESIRED_FREQUENCY; i++)
             cap >> frame;
@@ -140,19 +160,26 @@ int main() {
         }
         
         /**  @abstract set regions of interest (ROI) to scan for objects  */
-        Mat conveyorbelt = frame(MOLD_CONVEYOR_BELT);
-        customer_line = frame(MOLD_CUSTOMERLINE_NARROW);
+        Mat conveyorbelt = frame(ROI_CONVEYOR_BELT);
+        customer_line = frame(ROI_CUSTOMERLINE_NARROW);
         customer_line.copyTo(untouch_frame);
-        Mat displays = frame(MOLD_CUSTOMERLINE_WIDE);
+        Mat displays = frame(ROI_CUSTOMERLINE_WIDE);
         char buffer[20];
         sprintf(buffer, "%6d", CAP_CURRENT_FRAME);
         putLabel(displays, buffer, Point(30,20), 6, Scalar2(76,153,0));
         
+        
         /** @brief ignore returning values when detecting items on conveyor */
-        encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
+        deque<Customer> dev_null = encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
         /** @brief  hold all customers detected in current frame */
         deque<Customer> new_detected =
         encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
+        
+/** @fix */
+//        if (!number_of_objects_detected) {
+//            baseframe = frame;
+//            imshow("BASEFRAME",baseframe);
+//        }
         
         /** @brief  linkCustomers pushes currently detected to its respective customer in the list, create if is a new customer */
         linkCustomers(&new_detected, &track_customer);
@@ -163,13 +190,19 @@ int main() {
             if (track_customer[i].track)
             {
                 char identifier[20];
-                sprintf(identifier, " C%d", track_customer[i].id);
-                putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 3.5, paint_royal_blue);
+                sprintf(identifier, " C%d %dx%d", track_customer[i].id, track_customer[i].bounding.back().width, track_customer[i].bounding.back().height);
+                putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 10, paint_royal_blue);
+                //putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 3.5, paint_royal_blue);
+            } else
+            {
+                char identifier[20];
+                sprintf(identifier, "     %dx%d", track_customer[i].bounding.back().width, track_customer[i].bounding.back().height);
+                putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 10, paint_royal_blue);
             }
         }
         
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
-        ///sigma = 20;
+        sigma = HARD_CODED_SIGMA;
         createTrackbar( "Sigma", "Laplacian", &sigma, 30, 0 );;
 
         if(verbose)
@@ -269,9 +302,33 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     }
     differs = differs < 60;
     
-    if(SHOW_DIFF && OBJECT_ITEM == METHOD)
-        imshow("differs39", differs);
     
+    
+    /** if there is no objects in picture, update baseframe */
+    Mat NonZero_Locations;
+    findNonZero(differs, NonZero_Locations);
+    Number_Of_Elements = (int)NonZero_Locations.total();
+
+    if (!Number_Of_Elements) {
+        imshow("BASE", baseframe);
+    }
+
+    
+    
+    
+    /** @bookmark */
+    for (int y = 0; y < 2; y++)
+    {
+        for (int x = 0; x < differs.cols; x++)
+        {
+            differs.at<uchar>(y,x) = 255; //white
+            differs.at<uchar>(differs.rows-1-y,x) = 255;
+        }
+    }
+    
+    if(SHOW_DIFF && OBJECT_CUSTOMER == METHOD)
+        imshow("differs39", differs);
+
     
     Mat smoothed, laplace, result;
     if(SMOOTHTYPE == MEDIAN)
@@ -285,9 +342,10 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
         blur(differs, smoothed, Size(KSIZE, KSIZE));
     
     
-    /**  @brief Laplacian(InputArray src, OutputArray dst, int ddepth) */
+    /**  @abstract Laplacian(InputArray src, OutputArray dst, int ddepth) */
     Laplacian(smoothed, laplace, CV_16S, 5);
     convertScaleAbs(laplace, result, (SIGMA+1)*0.25);
+    
     
     if(SHOW_EDGES)
         imshow("result@#3", result);
@@ -313,10 +371,11 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
         approxPolyDP( Mat(contours_eo[i]), contours_poly[i], 10, true );
         boundRect[i] = boundingRect( Mat(contours_poly[i]) );
         minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
-        if( (radius[i] > 35) && (METHOD == OBJECT_CUSTOMER) )  /* change 35 to a const variable */
+        if( (radius[i] > 35) && (OBJECT_CUSTOMER == METHOD) )  /* @fix change 35 to a const variable */
         {
             circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
             circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
+            ///number_of_objects_detected++;
             ///circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
         }
     }
@@ -325,7 +384,7 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     /**  @brief merge overlapping boxes, returns number of boxes
      @warning might be better to merge contained boxes only
      @note i.e: A is a subset of B if every element of A is contained in B */
-    int overlapContours_size = mergeOverlappingBoxes(&boundRect, *instanceROI, &boundRectOut, METHOD);
+    int overlapContours_size = mergeOverlappingBoxes(&boundRect, *instanceROI, &boundRectOut, METHOD, center);
     
     deque<Customer> croppedObject;
     Rect r;
@@ -374,7 +433,7 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
         float total_conveyor_area = over_frame.height * over_frame.width;
         density_conveyor = (areaRs / total_conveyor_area);
         char buff[20];
-        sprintf(buff, " p ~%2.0d%c", ((100 * density_conveyor + 10)>=100)?99:((int)(100*density_conveyor+10)), '%');
+        sprintf(buff, " p ~%2.0d%c", ((100 * density_conveyor)>=100)?99:((int)(100*density_conveyor)), '%');
         putLabel(*instanceROI, buff, Point(0,0), 7,  Scalar2(0,102,204));
     }
     
@@ -463,11 +522,9 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
      e.g. in other words we are mapping from set A to set D and viceversa
      Mapping, any prescribed way of assigning to each object in one set a particular object in another (or the same) set
      In order to keep track of the elements that have linked vs the ones that might need instantiation */
+    /** @fix use doubly linked list instead */
     vector<int> AconnectsD, DconnectsA;
-    //    for (int i = 0; i < SIZEAnchor; i++)
-    //        AconnectsD.push_back(-1);
-    //    for (int i = 0; i < SIZECurrent; i++)
-    //        DconnectsA.push_back(-1);
+    
     
     /**  starting value for n_min */
     double n_mins = 1000;
@@ -610,19 +667,53 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
  @see overloaded customerList_add(deque<Customer> customers)
  @return number of outPut boxes, likely to be decreased compared to inputBoxes
  */
-int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *outputBoxes, int MOCI/*(method object customer/item)*/)
+int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *outputBoxes, int MOCI, vector<Point2f>center/*(method object customer/item)*/)
 {
     Mat mask = Mat::zeros(image.size(), CV_8UC1); // Mask of original image
     Size scaleFactor(-10,-10); // To expand rectangles, i.e. increase sensitivity to nearby rectangles --can be anything
     for (int i = 0; i < inputBoxes->size(); i++)
     {
+
+        Rect r = Rect(inputBoxes->at(i));
+        Point2d centroid = Point2d(r.x + r.width / 2, r.y + r.height / 2);
+        double x = centroid.x/10;
+        double y = 0.0158* pow(x,2) - 1.13*x + 220.71;
+        
+//        Div_zone ZONE;
+//        if(center[i].x > Z1_CROSSOVER_LINE*10)
+//            ZONE = DIV1;
+//        else if(center[i].x > Z2_CROSSOVER_LINE*10)
+//            ZONE = DIV2;
+//        else if(center[i].x > Z3_CROSSOVER_LINE*10)
+//            ZONE = DIV3;
+//        else
+//            ZONE = DIV4;
+        
         //// double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
         /**  @brief filter boxes, ignore too small or big boxes when detecting customers */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
-//                if((inputBoxes->at(i).height * inputBoxes->at(i).width) < MIN_AREA)
-                if(inputBoxes->at(i).width < 215)
+                if((inputBoxes->at(i).width < y) || (inputBoxes->at(i).width > 500))
                     continue;
+//                if((inputBoxes->at(i).height * inputBoxes->at(i).width) < MIN_AREA)
+//                    continue;
+//                if(DIV1 == ZONE)
+//                {
+//                    if(inputBoxes->at(i).width < Z1_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z1_CART_SIZE_RANGES[1])
+//                        continue;
+//                } else if(DIV2 == ZONE)
+//                {
+//                    if(inputBoxes->at(i).width < Z2_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z2_CART_SIZE_RANGES[1])
+//                        continue;
+//                } else if(DIV3 == ZONE)
+//                {
+//                    if(inputBoxes->at(i).width < Z3_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z3_CART_SIZE_RANGES[1])
+//                        continue;
+//                } else
+//                {
+//                    if(inputBoxes->at(i).width < Z4_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z4_CART_SIZE_RANGES[1])
+//                        continue;
+//                }
                 break;
             case OBJECT_ITEM:
                 break;
@@ -635,7 +726,7 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
     }
     
     
-    if (SHOW_OVERLAPPING_BOXES && OBJECT_ITEM == MOCI)
+    if (SHOW_OVERLAPPING_BOXES && OBJECT_CUSTOMER == MOCI)
         imshow("Amask", mask);
     
     vector<vector<Point>> contoursOverlap;

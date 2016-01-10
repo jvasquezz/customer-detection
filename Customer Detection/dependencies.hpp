@@ -31,6 +31,7 @@ using namespace::cv;
  */
 typedef enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER} Smooth_tier;
 typedef enum {OBJECT_ITEM, OBJECT_CUSTOMER} Pick_object;
+typedef enum {DIV1, DIV2, DIV3, DIV4, DIV5, DIV6} Div_zone;
 extern Smooth_tier smoothTier;
 
 
@@ -40,7 +41,7 @@ void customerList_add( Customer ttcustomer);
 unsigned int customerList_add(deque<Customer> ttcustomers);
 void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer);
 deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, Pick_object targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, Smooth_tier SMOOTHTYPE/*MEDIAN*/);
-int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD);
+int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD, vector<Point2f>center);
 void CustomerOpticalFlow(int noObjects_TDOF);
 
 
@@ -74,9 +75,10 @@ extern const int OBJ_DELETION_LINE;
 extern bool SHOW_EDGES;
 extern bool SHOW_DIFF;
 
-extern Rect MOLD_CUSTOMERLINE_WIDE;
-extern Rect MOLD_CUSTOMERLINE;
-extern Rect MOLD_CONVEYOR_BELT;
+extern Rect ROI_CUSTOMERLINE_NARROW;
+extern Rect ROI_CUSTOMERLINE_WIDE;
+extern Rect ROI_CONVEYOR_BELT;
+extern Rect ROI_CUSTOMERLINE;
 
 extern Mat frame, baseframe, line_print, belt_print, customer_line;
 extern Mat smoothed, laplace, result;
