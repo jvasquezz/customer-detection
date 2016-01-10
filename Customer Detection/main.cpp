@@ -679,41 +679,12 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         double x = centroid.x/10;
         double y = 0.0158* pow(x,2) - 1.13*x + 220.71;
         
-//        Div_zone ZONE;
-//        if(center[i].x > Z1_CROSSOVER_LINE*10)
-//            ZONE = DIV1;
-//        else if(center[i].x > Z2_CROSSOVER_LINE*10)
-//            ZONE = DIV2;
-//        else if(center[i].x > Z3_CROSSOVER_LINE*10)
-//            ZONE = DIV3;
-//        else
-//            ZONE = DIV4;
-        
         //// double euclianPointDistance = norm(inputBoxes->at(i).tl() - inputBoxes->at(i).br());
         /**  @brief filter boxes, ignore too small or big boxes when detecting customers */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
                 if((inputBoxes->at(i).width < y) || (inputBoxes->at(i).width > 500))
                     continue;
-//                if((inputBoxes->at(i).height * inputBoxes->at(i).width) < MIN_AREA)
-//                    continue;
-//                if(DIV1 == ZONE)
-//                {
-//                    if(inputBoxes->at(i).width < Z1_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z1_CART_SIZE_RANGES[1])
-//                        continue;
-//                } else if(DIV2 == ZONE)
-//                {
-//                    if(inputBoxes->at(i).width < Z2_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z2_CART_SIZE_RANGES[1])
-//                        continue;
-//                } else if(DIV3 == ZONE)
-//                {
-//                    if(inputBoxes->at(i).width < Z3_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z3_CART_SIZE_RANGES[1])
-//                        continue;
-//                } else
-//                {
-//                    if(inputBoxes->at(i).width < Z4_CART_SIZE_RANGES[0] || inputBoxes->at(i).width > Z4_CART_SIZE_RANGES[1])
-//                        continue;
-//                }
                 break;
             case OBJECT_ITEM:
                 break;
