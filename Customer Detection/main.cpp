@@ -1,5 +1,9 @@
 
 #include "dependencies.hpp"
+#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
+#include <iostream>
+#include <fstream>
+
 
 /** Default smooth type to run application, change using spacebar */
 Smooth_tier smoothTier = GAUSSIAN;
@@ -33,6 +37,7 @@ const int OBJ_DELETION_LINE = 15;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
+const int GRABS = 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -61,8 +66,8 @@ public:
     vector<MatND> histog;
     vector<Point2d> position;
     vector<Rect> bounding;
-    double time_introduced;
-    double last_recorded_time;
+    time_t time_introduced;
+    time_t last_recorded_time;
 };
 
 /** List of Customers to track @see class Customer  */
@@ -127,7 +132,7 @@ int main() {
     {
         if (flags)
         {
-            for (int i = 0; i < 23000; i++) {
+            for (int i = 0; i < GRABS; i++) {
                 cap.grab();
             }
             flags = false;
@@ -485,6 +490,19 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     {
         if ((anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE) /*|| (anchor_customer->at(i).idle > IDLE_LIMIT)*/)
         {
+            time(&anchor_customer->at(i).last_recorded_time);
+            
+            /** @back */
+            fstream myFile ("data.bin", ios::in | ios::out | ios::binary);
+//            if (!myFile.is_open())
+//            {
+//                cout <<"ERROR OPENINGFILE";
+//                break;
+//            }
+
+            myFile.write((char*)&anchor_customer->at(i),sizeof(Customer));
+            myFile.seekg(0);    /** read from beginning */
+            
             /** write  object to file */
             anchor_customer->erase(anchor_customer->begin()+i);
             anchor_customer->shrink_to_fit();
@@ -656,10 +674,14 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         
         /**  @brief set track to TRUE when threshold is crossed */
         if (!anchor_customer->at(linker_index).track)
+        {
             if ((int)(anchor_customer->at(linker_index).position[0].x/10) > CART_DETECTED_AT_START_OF_LINE &&
                 (int)(anchor_customer->at(linker_index).position.back().x/10) < OBJ_CREATION_LINE)
+            {
                 anchor_customer->at(linker_index).track = true;
-        
+                time(&anchor_customer->at(linker_index).time_introduced);
+            }
+        }
         /**  @brief stop tracking object when customer has checked out */
     }
 }
