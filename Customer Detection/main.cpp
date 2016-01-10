@@ -12,6 +12,7 @@ Smooth_tier smoothTier = GAUSSIAN;
 bool SHOW_OVERLAPPING_BOXES = false;
 bool SHOW_P2POINT_CONNECTIONS = false;
 bool BISECT_F2FRAME = false;
+bool SHOW_DISPLAY = true;
 bool SHOW_EDGES = false;
 bool OPTFLOW_ON = false;
 bool SHOW_DIFF = false;
@@ -37,7 +38,7 @@ const int OBJ_DELETION_LINE = 15;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
-const int GRABS = 1000;
+const int GRABS = 3950;
 
 /** Global variables */
 Mat baseframe;
@@ -66,8 +67,9 @@ public:
     vector<MatND> histog;
     vector<Point2d> position;
     vector<Rect> bounding;
-    time_t time_introduced;
-    time_t last_recorded_time;
+    vector<time_t> time_lapse;
+//    time_t time_introduced;
+//    time_t last_recorded_time;
 };
 
 /** List of Customers to track @see class Customer  */
@@ -88,14 +90,7 @@ int main() {
     const double FPS_CAP=cap.get(CV_CAP_PROP_FPS);
     /** more vid files:
      @e Jan-8e_Preprocess10FPS.mp4
-     @a SEGMENTA_720P_20FPS.mp4
-     @c 20FPS720P1416.mp4
-     @b 10FPS.mp4
-     @b ver.mp4
-     @e 2CART.mp4
-     @c Untitled.mp4
-     @e 30FPS.mp4
-     @a 6FPS.mp4   */
+     */
     
     baseframe = imread(BASEFRAME_DIR);
     namedWindow( "Laplacian", 0 );
@@ -202,7 +197,9 @@ int main() {
         if(verbose)
             printf("Sigma value %d\n", sigma);
         
-        imshow("customer_line", displays);
+        if (SHOW_DISPLAY)
+            imshow("customer_line", displays);
+
         if (OPTFLOW_ON)
             imshow("sketchMat", sketchMat);
         
@@ -493,11 +490,11 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         if ((anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE) /*|| (anchor_customer->at(i).idle > IDLE_LIMIT)*/)
         {
             /** record time customer reaches end of line */
-            time(&anchor_customer->at(i).last_recorded_time);
+            /** @FIX time(&anchor_customer->at(i).time_lapse.front()); */
             
             /** object's file destination naming */
             char filename[20];
-            sprintf(filename, "customer%d.bin", anchor_customer->at(i).id);
+            sprintf(filename, "customer%d", anchor_customer->at(i).id);
             fstream myFile(filename, ios::trunc | ios::out | ios::binary);
             /** check if file was opened correctly */
             if (!myFile.is_open())
@@ -506,12 +503,35 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                 continue;
             }
             
+//            vector<Point2d> position_points;
+//            FileStorage fs("position_points.yml", FileStorage::WRITE);
+//            write( fs , filename, anchor_customer->at(i).position);
+//            fs.release();
+            ///strcat(filename, "bounding");
+//            FileStorage fsbounding("bounding.yml", FileStorage::WRITE);
+//            write( fsbounding, filename, anchor_customer->at(i).bounding);
+//            fsbounding.release();
+            
+            FileStorage fsbounding("bounding_rects.yml", FileStorage::APPEND);
+            write( fsbounding, filename, anchor_customer->at(i).bounding);
+            fsbounding.release();
+
+            //FileStorage fscustomer("time_lapse.xml", FileStorage::APPEND);
+            //write( fscustomer, filename, anchor_customer->at(i).time_lapse);
+            //
+            //write( fscustomer, filename, anchor_customer->at(i).time_introduced);
+            
+            ///write( fscustomer, filename, anchor_customer->at(i)).bounding);
+            ///fscustomer.writeObj(filename, &anchor_customer->at(i));
+            ///fscustomer << filename << &anchor_customer->at(i);
+            ///fscustomer.writeObj(filename, &anchor_customer->at(i));
+            ///fscustomer.release();
+            
             /** write  object to file */
             myFile.write((char*)&anchor_customer->at(i), sizeof(Customer));
             myFile.seekg(0);    /** read from beginning */
             myFile.close();     /** close file */
 
-            /**  @fixed set a flag of object that I deleted, the one I threw away should be checked */
             /** release object from vector array and shrink vector when finished processing current frame */
             BRANDED_FOR_DELETION[i] = true;
         }
@@ -639,6 +659,9 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             /** push all data that needs to be updated in Customer list */
             anchor_customer->at(a).bounding.push_back(current_detected->at(AconnectsD[a]).bounding.back());
             anchor_customer->at(a).position.push_back(current_detected->at(AconnectsD[a]).position.back());
+            time_t tmptime;
+            time(&tmptime);
+            anchor_customer->at(a).time_lapse.push_back(tmptime);
         }
         
         //        if (AconnectsD[a] == -1)
@@ -687,7 +710,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                 (int)(anchor_customer->at(linker_index).position.back().x/10) < OBJ_CREATION_LINE)
             {
                 anchor_customer->at(linker_index).track = true;
-                time(&anchor_customer->at(linker_index).time_introduced);
+                /** @FIX time(&anchor_customer->at(linker_index).time_lapse.front()); */
             }
         }
         /**  @brief stop tracking object when customer has checked out */
