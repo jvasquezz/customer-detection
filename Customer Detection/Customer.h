@@ -23,7 +23,7 @@ public:
     vector<MatND> histog;
     vector<Point2d> position;
     vector<Rect> bounding;
-    vector<time_t> time_lapse;
+    vector<struct timeval> time_lapse;
     //    time_t time_introduced;
     //    time_t last_recorded_time;
 };

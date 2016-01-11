@@ -76,7 +76,7 @@ namespace archive
     }
     
     /** @abstract writes a vector of timestamps to a .times file */
-    void write2(vector<time_t>* tcustomer, char* ttimefile)
+    void write2(vector<struct timeval>* tcustomer, char* ttimefile)
     {
         /*---------------------------------------------------------------------------*/
         /** writing all positions of tracked customer to file */

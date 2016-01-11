@@ -14,7 +14,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <array>
-#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
+#include <sys/time.h>
+#include <unistd.h>
+//#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
 #include "inscribe.cpp"
 #include "archive.cpp"
 #include "Customer.h"

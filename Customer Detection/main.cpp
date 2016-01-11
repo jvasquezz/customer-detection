@@ -1,6 +1,7 @@
 
 #include "dependencies.hpp"
 
+
 /** Default smooth type to run application, change using spacebar */
 Smooth_tier smoothTier = GAUSSIAN;
 
@@ -97,6 +98,13 @@ int main() {
     stain[4] = paint_lightORANGE;
     stain[5] = paint_ade004;
     stain[6] = paint_blue;
+    
+//    struct timeval start, end;
+//    long mtime, seconds, useconds;
+    
+//    gettimeofday(&start, NULL);
+//    usleep(2000);
+//    gettimeofday(&end, NULL);
     
     
     /**  @brief main loop */
@@ -606,9 +614,10 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             /** push all data that needs to be updated in Customer list */
             anchor_customer->at(a).bounding.push_back(current_detected->at(AconnectsD[a]).bounding.back());
             anchor_customer->at(a).position.push_back(current_detected->at(AconnectsD[a]).position.back());
-            time_t tmptime;
-            time(&tmptime);
-            anchor_customer->at(a).time_lapse.push_back(tmptime);
+        
+            struct timeval current;
+            gettimeofday(&current, NULL);
+            anchor_customer->at(a).time_lapse.push_back(current);
         }
         
         //        if (AconnectsD[a] == -1)
