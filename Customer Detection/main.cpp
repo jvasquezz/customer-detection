@@ -1,8 +1,6 @@
 
 #include "dependencies.hpp"
 #include <time.h>       /* time_t, struct tm, difftime, time, mktime */
-#include <iostream>
-#include <fstream>
 
 
 /** Default smooth type to run application, change using spacebar */
@@ -38,7 +36,7 @@ const int OBJ_DELETION_LINE = 15;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
-const int GRABS = 3950;
+const int GRABS = 3980;
 
 /** Global variables */
 Mat baseframe;
@@ -494,7 +492,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             
             /** object's file destination naming */
             char filename[20];
-            sprintf(filename, "customer%d", anchor_customer->at(i).id);
+            sprintf(filename, "c%d", anchor_customer->at(i).id);
             fstream myFile(filename, ios::trunc | ios::out | ios::binary);
             /** check if file was opened correctly */
             if (!myFile.is_open())
@@ -503,35 +501,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                 continue;
             }
             
-//            vector<Point2d> position_points;
-//            FileStorage fs("position_points.yml", FileStorage::WRITE);
-//            write( fs , filename, anchor_customer->at(i).position);
-//            fs.release();
-            ///strcat(filename, "bounding");
-//            FileStorage fsbounding("bounding.yml", FileStorage::WRITE);
-//            write( fsbounding, filename, anchor_customer->at(i).bounding);
-//            fsbounding.release();
+            archive::write();
             
-            FileStorage fsbounding("bounding_rects.yml", FileStorage::APPEND);
-            write( fsbounding, filename, anchor_customer->at(i).bounding);
-            fsbounding.release();
-
-            //FileStorage fscustomer("time_lapse.xml", FileStorage::APPEND);
-            //write( fscustomer, filename, anchor_customer->at(i).time_lapse);
-            //
-            //write( fscustomer, filename, anchor_customer->at(i).time_introduced);
-            
-            ///write( fscustomer, filename, anchor_customer->at(i)).bounding);
-            ///fscustomer.writeObj(filename, &anchor_customer->at(i));
-            ///fscustomer << filename << &anchor_customer->at(i);
-            ///fscustomer.writeObj(filename, &anchor_customer->at(i));
-            ///fscustomer.release();
-            
-            /** write  object to file */
-            myFile.write((char*)&anchor_customer->at(i), sizeof(Customer));
-            myFile.seekg(0);    /** read from beginning */
-            myFile.close();     /** close file */
-
             /** release object from vector array and shrink vector when finished processing current frame */
             BRANDED_FOR_DELETION[i] = true;
         }

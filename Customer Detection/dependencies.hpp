@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <array>
 #include "inscribe.cpp"
+#include "archive.cpp"
 
 /** namespaces */
 using namespace::inscribe;

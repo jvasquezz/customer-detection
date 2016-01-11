@@ -28,6 +28,7 @@
 		FE816F1A1C3E3EEC000A610C /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		FE8465381C23440D00274A19 /* Customer Detection */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Customer Detection"; sourceTree = BUILT_PRODUCTS_DIR; };
 		FE8465421C234EE300274A19 /* dependencies.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dependencies.hpp; sourceTree = "<group>"; };
+		FE8EB5211C43252900E2257D /* archive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = archive.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +64,7 @@
 				FE8465421C234EE300274A19 /* dependencies.hpp */,
 				FE816F1A1C3E3EEC000A610C /* main.cpp */,
 				FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */,
+				FE8EB5211C43252900E2257D /* archive.cpp */,
 				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
 			);
 			path = "Customer Detection";
