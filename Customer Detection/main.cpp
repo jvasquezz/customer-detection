@@ -30,8 +30,10 @@ int INSTANT_DISPLACEMENT_TOLERANCE = 250;
 const int CART_DETECTED_AT_START_OF_LINE = 100;
 const int OBJ_CREATION_LINE = 100;
 const int OBJ_DELETION_LINE = 15;
+int CLUSTER_INTENSITY = 40;
 /** the tolerance rate when swiping an object, the lower the more tolerant, the higher the more sensitive @abstract set value between 0 and 1 */
-int Sensitivity = 9999;
+/** Sensitivity controls the precision within .98 to 1*/
+int Sensitivity = 199;
 float SWIPE_SENSITIVITY;
 /**  @brief set value to desired FPS rate, recommended 10-15 */
 /**  @discussion The human eye and its brain interface, the human visual system, can
@@ -60,46 +62,132 @@ unsigned int Number_Of_Elements;
 deque<Customer> track_customer;
 
 
-bool isClusterPresent(Mat* arearoi, Mat* baseroi)
+//bool isObjectPresent(Mat* arearoi, Mat* baseroi)
+//{
+//    Mat tmp1, tmp2;
+//    cvtColor(*baseroi, tmp1, COLOR_BGR2GRAY);
+//    cvtColor(*arearoi, tmp2, COLOR_BGR2GRAY);
+//    
+//    Mat cs_diff2 = tmp2 - tmp1;
+//    Mat cs_diff = *arearoi - *baseroi;
+//    
+//    medianBlur(cs_diff, cs_diff, 15);
+//    cs_diff = cs_diff < CLUSTER_INTENSITY;
+//    
+//    cvtColor(cs_diff, cs_diff, COLOR_BGR2GRAY);
+//    threshold(cs_diff, cs_diff, 80, 255, CV_THRESH_BINARY);
+//    
+//    rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_salmon);
+//
+//    if (SHOW_SWIPES)
+//    {
+//        pyrUp(cs_diff, cs_diff);
+//        imshow("diff (cashier,current_swipe_area)", cs_diff);
+//    }
+//    imshow("isthere", cs_diff);
+//    
+//    /** zeros is black in RGB */
+//    Mat nonzeros_m;
+//    findNonZero(cs_diff, nonzeros_m);
+//    int nonzeros = (int)nonzeros_m.total();
+//    
+//    int pixels = (cs_diff.rows*cs_diff.cols);
+//    float ratio =(float)nonzeros/(float)pixels;
+//    
+//    if (ratio < SWIPE_SENSITIVITY)
+//        return true;
+//    return false;
+//}
+
+bool isObjectPresent(Mat* arearoi, Mat* baseroi)
 {
+    Mat threshold_output;
+    vector<vector<Point> > contours_eo;
+    vector<Vec4i> hierarchy;
+    
     Mat tmp1, tmp2;
-    cvtColor(*baseroi, tmp1, CV_RGB2GRAY);
-    cvtColor(*arearoi, tmp2, CV_RGB2GRAY);
-    Mat cs_diff = tmp2 - tmp1;
-    cs_diff = cs_diff < 80;
-    ////GaussianBlur(cs_diff, cs_diff, Size(7,7), 1.5,1.5);
-    threshold(cs_diff, cs_diff, 80, 255, CV_THRESH_BINARY);
-    pyrUp(cs_diff, cs_diff);
-    pyrUp(cs_diff, cs_diff);
-    pyrUp(cs_diff, cs_diff);
+    cvtColor(*baseroi, tmp1, COLOR_BGR2GRAY);
+    cvtColor(*arearoi, tmp2, COLOR_BGR2GRAY);
     
+    Mat cs_diff2 = tmp2 - tmp1;
+    Mat cs_diff3 = *arearoi - *baseroi;
+    Mat cs_diff = *baseroi - *arearoi;
     
-    if (SHOW_SWIPES)
-        imshow("diff (cashier,current_swipe_area)", cs_diff);
+    medianBlur(cs_diff, cs_diff, 15);
+    cs_diff = cs_diff < CLUSTER_INTENSITY;
     
-    /** zeros is black in RGB */
-    Mat nonzeros_m;
-    findNonZero(cs_diff, nonzeros_m);
-    int nonzeros = (int)nonzeros_m.total();
+    cvtColor(cs_diff, cs_diff, COLOR_BGR2GRAY);
     
-    int pixels = (cs_diff.rows*cs_diff.cols);
-    float ratio =(float)nonzeros/(float)pixels;
+    Mat result2, laplace2;
+    /**  @abstract Laplacian(InputArray src, OutputArray dst, int ddepth) */
+    Laplacian(cs_diff, laplace2, CV_16S, 5);
+    convertScaleAbs(laplace2, result2, (20+1)*0.25);
     
-    if (ratio < SWIPE_SENSITIVITY)
-        return true;
-    return false;
+    cs_diff = result2;
+//    int THRESH = 100;
+    /// Detect edges using Threshold
+    threshold(cs_diff, threshold_output, CLUSTER_INTENSITY, 255, THRESH_BINARY );
+    /// Find contours
+    findContours( threshold_output, contours_eo, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+    
+    /// Approximate contours to polygons + get bounding rects and circles
+    vector<vector<Point> > contours_poly( contours_eo.size() );
+    vector<Point2f>center( contours_eo.size() );
+    vector<float>radius( contours_eo.size() );
+    
+    rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_salmon);
+    for( int i = 0; i < contours_eo.size(); i++ )
+    {
+        approxPolyDP( Mat(contours_eo[i]), contours_poly[i], 10, true );
+        minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+        if (radius[i] > 25)
+        {
+//            putText(*arearoi, (char*)"1", Point(arearoi->cols/2, arearoi->rows/2), 4, 1, WHITE);
+//            putLabel(*arearoi, (char*)"1", Point(0,0), 1, paint_salmon);
+//            circle(*arearoi, center[i], radius[i]/2, WHITE, 1, 8, 0);
+        }
+//        else
+//        {
+//            putLabel(*arearoi, (char*)"0", Point(0,0), 1, paint_salmon);
+//        }
+        /** approxPolyDP(InputArray curve, OutputArray approxCurve, double epsilon, bool closed) */
+//        drawContours(*arearoi, contours_eo, i, paint_indigo, 1, 8, hierarchy);
+
+//        fillPoly(*arearoi, elementPoints, &numberOfPoints, 1, paint_indigo, 8);
+//        const Point* elementPoints[1] = { *contours_poly[i] };
+//        int numberOfPoints = (int)contours_poly[i].size();
+//                fillPoly (contourMask, elementPoints, &numberOfPoints, 1, Scalar (0, 0, 0), 8);
+//        boundRect[i] = boundingRect( Mat(contours_poly[i]) );
+//        minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+        
+//        if( (radius[i] > 35) && (OBJECT_CUSTOMER == METHOD) )  /* @fix change 35 to a const variable */
+//        {
+//            circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
+//            circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
+//            ///number_of_objects_detected++;
+//            ///circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
+//        }
+    }
+    return true;
 }
 
 void countSwipes(int ICP, Mat* disp)
 {
     static bool last_ICP;
-    static int swipes;
+    static int swipes, LICP;
     /** if there is a change in frame and it detects and object */
-    if (ICP != last_ICP && ICP == true)
+    if (ICP != last_ICP && ICP == false && LICP > 2)
     {
         swipes++;
+        LICP = 0;
+    }
+    
+    if (ICP)
+    {
+        LICP++;
     }
     last_ICP = ICP;
+    
     char swipetext[20];
     sprintf(swipetext, "s%5d", swipes);
 //    putText(*disp, swipetext, Point(410,106), 3, .5, Scalar(255,255,255),1.5,40);
@@ -136,13 +224,17 @@ int main() {
     Rect ROI_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
     Rect ROI_CUSTOMERLINE_NARROW(0,baseframe.rows/2.45,1280,113);  ////113 vs 131 vs 145
     Rect ROI_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,112);
-    Rect ROI_CASHIER_SWIPES(425,183,40,35);  ///436,190,21,21); ///445,180,22,21); ///420,170, 55, 38);
+//    Rect ROI_CASHIER_SWIPES(425,183,40,35);  ///436,190,21,21); ///445,180,22,21); ///420,170, 55, 38);
+//    Rect ROI_CASHIER_SWIPES(420,183,53,45);
+    Rect ROI_CASHIER_SWIPES(415,170,66,58);
+    Rect ROI_BEHIND_OBJ_CREATION_LINE(800,203,170,247);
     
     int thresh = 100;
-    Mat line_print, belt_print, frame, customer_line, swipe_area;
+    Mat line_print, belt_print, frame, customer_line, swipe_area, bocl_print;
     line_print = baseframe(ROI_CUSTOMERLINE_NARROW);
     belt_print = baseframe(ROI_CONVEYOR_BELT);
     swipe_area = baseframe(ROI_CASHIER_SWIPES);
+    bocl_print = baseframe(ROI_BEHIND_OBJ_CREATION_LINE);
     
     line_print.copyTo(sketchMat);
     
@@ -164,7 +256,6 @@ int main() {
     
     /**  @brief main loop */
     bool flags = true;
-    bool last_ICP;
     for(;;)
     {
         if (flags)
@@ -199,7 +290,6 @@ int main() {
         char buffer[20];
         sprintf(buffer, "%6d", CAP_CURRENT_FRAME);
         putLabel(displays, buffer, Point(30,20), 6, Scalar2(76,153,0));
-        
         
         /** @brief ignore returning values when detecting items on conveyor */
         deque<Customer> dev_null = encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
@@ -237,14 +327,22 @@ int main() {
         /**  @brief count swipes by cashier */
         Mat current_swipe_area = frame(ROI_CASHIER_SWIPES);
 
-        createTrackbar( "Sensitivity (swipes)", "Controllers", &Sensitivity, 10000, 0 );
-        SWIPE_SENSITIVITY = Sensitivity / (float)10000;
+        createTrackbar( "Sensitivity(swipes)", "Controllers", &Sensitivity, 200, 0 );
+        SWIPE_SENSITIVITY = (9800.0+ (float)Sensitivity) / (float)10000;
+
+        /** create trackbar for cluster intesity of the pixel threshold */
+        createTrackbar("Intensity(swipes)", "Controllers", &CLUSTER_INTENSITY, 255, 0 );
         
-        bool ICP = isClusterPresent(&current_swipe_area, &swipe_area);
+        bool ICP = isObjectPresent(&current_swipe_area, &swipe_area);
         countSwipes(ICP, &displays);
 
+        Mat bocl = frame(ROI_BEHIND_OBJ_CREATION_LINE);
+        bool IOP = isObjectPresent(&bocl, &bocl_print);
+        cout << IOP << endl;
+        
         /** create trackbar for distance displacement tolerance */
         createTrackbar( "Displacement tolerance", "Controllers", &INSTANT_DISPLACEMENT_TOLERANCE, 1280, 0 );
+        
         
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
         sigma = HARD_CODED_SIGMA;
@@ -375,7 +473,8 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     }
     
     
-    /** @bookmark */
+    /** @brief creates a white line at the top and bottom of the current ROI
+        @discussion this helps to create an edge around the limit of the ROI area */
     for (int y = 0; y < 2; y++)
     {
         for (int x = 0; x < differs.cols; x++)
