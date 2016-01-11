@@ -51,24 +51,7 @@ static int mu_uid = 0;
 
 unsigned int number_of_objects_detected;
 unsigned int Number_Of_Elements;
-/**
- @class Customer
- @discussion Customer class with attributes to track positions, bounding rectangles and times an object is in the line
- */
-class Customer
-{
-public:
-    int id;
-    int idle;
-    bool track;
-    int type; ///type of object detected
-    vector<MatND> histog;
-    vector<Point2d> position;
-    vector<Rect> bounding;
-    vector<time_t> time_lapse;
-//    time_t time_introduced;
-//    time_t last_recorded_time;
-};
+
 
 /** List of Customers to track @see class Customer  */
 deque<Customer> track_customer;
@@ -501,7 +484,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
                 continue;
             }
             
-            archive::write();
+            archive::write(&anchor_customer->at(i));
             
             /** release object from vector array and shrink vector when finished processing current frame */
             BRANDED_FOR_DELETION[i] = true;

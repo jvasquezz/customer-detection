@@ -16,6 +16,7 @@
 #include <array>
 #include "inscribe.cpp"
 #include "archive.cpp"
+#include "Customer.h"
 
 /** namespaces */
 using namespace::inscribe;
