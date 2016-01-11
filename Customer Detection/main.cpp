@@ -1,7 +1,5 @@
 
 #include "dependencies.hpp"
-#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
-
 
 /** Default smooth type to run application, change using spacebar */
 Smooth_tier smoothTier = GAUSSIAN;
@@ -100,7 +98,6 @@ int main() {
     stain[5] = paint_ade004;
     stain[6] = paint_blue;
     
-    /** @redundance vector<MatND> past_vHistograms; */
     
     /**  @brief main loop */
     bool flags = true;
@@ -478,8 +475,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             
             /** archive the customer that reached end of line */
             ///archive::write2(&anchor_customer->at(i), filename);
+            archive::write2(&anchor_customer->at(i).position, filename);
             archive::write2(&anchor_customer->at(i).bounding, filename);
-            ///archive::write2(&anchor_customer->at(i).position, filename);
             archive::write2(&anchor_customer->at(i).time_lapse, filename);
             
             /** release object from vector array and shrink vector when finished processing current frame */

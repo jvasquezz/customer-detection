@@ -64,7 +64,7 @@ namespace archive
         strcat(customerpoint, ".points");
         fstream pStoring(customerpoint, ios::trunc | ios::out | ios::binary);
         pStoring.write((char*)&sizep, sizeof(sizep)); /** writes the size of vector */
-        pStoring.write((char*)&pcustomer, sizep * sizeof(pcustomer));
+        pStoring.write((char*)&pcustomer[0], sizep * sizeof(pcustomer));
         pStoring.seekg(0);
         pStoring.close();
         
@@ -86,7 +86,7 @@ namespace archive
         strcat(customertimes, ".times");
         fstream tStoring(customertimes, ios::trunc | ios::out | ios::binary);
         tStoring.write((char*)&sizet, sizeof(sizet)); /** writes the size of vector */
-        tStoring.write((char*)&tcustomer, sizet * sizeof(tcustomer));
+        tStoring.write((char*)&tcustomer[0], sizet * sizeof(tcustomer));
         tStoring.seekg(0);
         tStoring.close();
         
