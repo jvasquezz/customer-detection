@@ -36,7 +36,7 @@ using namespace::cv;
  */
 typedef enum {GAUSSIAN, BLUR, MEDIAN, BILATERAL_FILTER} Smooth_tier;
 typedef enum {OBJECT_ITEM, OBJECT_CUSTOMER} Pick_object;
-typedef enum {DIV1, DIV2, DIV3, DIV4, DIV5, DIV6} Div_zone;
+typedef enum {DARK, BRIGHT} Background;
 extern Smooth_tier smoothTier;
 
 

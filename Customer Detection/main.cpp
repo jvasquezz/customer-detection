@@ -41,7 +41,7 @@ float SWIPE_SENSITIVITY;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
-const int GRABS =   0; ///3980; 1000;
+const int GRABS =   1000; ///3980; 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -61,115 +61,114 @@ unsigned int Number_Of_Elements;
 /** List of Customers to track @see class Customer  */
 deque<Customer> track_customer;
 
-
-//bool isObjectPresent(Mat* arearoi, Mat* baseroi)
-//{
-//    Mat tmp1, tmp2;
-//    cvtColor(*baseroi, tmp1, COLOR_BGR2GRAY);
-//    cvtColor(*arearoi, tmp2, COLOR_BGR2GRAY);
-//    
-//    Mat cs_diff2 = tmp2 - tmp1;
-//    Mat cs_diff = *arearoi - *baseroi;
-//    
-//    medianBlur(cs_diff, cs_diff, 15);
-//    cs_diff = cs_diff < CLUSTER_INTENSITY;
-//    
-//    cvtColor(cs_diff, cs_diff, COLOR_BGR2GRAY);
-//    threshold(cs_diff, cs_diff, 80, 255, CV_THRESH_BINARY);
-//    
-//    rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_salmon);
-//
-//    if (SHOW_SWIPES)
-//    {
-//        pyrUp(cs_diff, cs_diff);
-//        imshow("diff (cashier,current_swipe_area)", cs_diff);
-//    }
-//    imshow("isthere", cs_diff);
-//    
-//    /** zeros is black in RGB */
-//    Mat nonzeros_m;
-//    findNonZero(cs_diff, nonzeros_m);
-//    int nonzeros = (int)nonzeros_m.total();
-//    
-//    int pixels = (cs_diff.rows*cs_diff.cols);
-//    float ratio =(float)nonzeros/(float)pixels;
-//    
-//    if (ratio < SWIPE_SENSITIVITY)
-//        return true;
-//    return false;
-//}
-
-bool isObjectPresent(Mat* arearoi, Mat* baseroi)
+/** @bookmark */
+bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background DB)
 {
-    Mat threshold_output;
-    vector<vector<Point> > contours_eo;
-    vector<Vec4i> hierarchy;
-    
-    Mat tmp1, tmp2;
-    cvtColor(*baseroi, tmp1, COLOR_BGR2GRAY);
-    cvtColor(*arearoi, tmp2, COLOR_BGR2GRAY);
-    
-    Mat cs_diff2 = tmp2 - tmp1;
-    Mat cs_diff3 = *arearoi - *baseroi;
-    Mat cs_diff = *baseroi - *arearoi;
+    Mat cs_diff;
+    if (DARK == DB)
+        cs_diff = *arearoi - *baseroi;
+    else if (BRIGHT == DB)
+        cs_diff = *baseroi - *arearoi;
     
     medianBlur(cs_diff, cs_diff, 15);
     cs_diff = cs_diff < CLUSTER_INTENSITY;
     
     cvtColor(cs_diff, cs_diff, COLOR_BGR2GRAY);
-    
-    Mat result2, laplace2;
-    /**  @abstract Laplacian(InputArray src, OutputArray dst, int ddepth) */
-    Laplacian(cs_diff, laplace2, CV_16S, 5);
-    convertScaleAbs(laplace2, result2, (20+1)*0.25);
-    
-    cs_diff = result2;
-//    int THRESH = 100;
-    /// Detect edges using Threshold
-    threshold(cs_diff, threshold_output, CLUSTER_INTENSITY, 255, THRESH_BINARY );
-    /// Find contours
-    findContours( threshold_output, contours_eo, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-    
-    /// Approximate contours to polygons + get bounding rects and circles
-    vector<vector<Point> > contours_poly( contours_eo.size() );
-    vector<Point2f>center( contours_eo.size() );
-    vector<float>radius( contours_eo.size() );
-    
-    rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_salmon);
-    for( int i = 0; i < contours_eo.size(); i++ )
-    {
-        approxPolyDP( Mat(contours_eo[i]), contours_poly[i], 10, true );
-        minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
-        if (radius[i] > 25)
-        {
-//            putText(*arearoi, (char*)"1", Point(arearoi->cols/2, arearoi->rows/2), 4, 1, WHITE);
-//            putLabel(*arearoi, (char*)"1", Point(0,0), 1, paint_salmon);
-//            circle(*arearoi, center[i], radius[i]/2, WHITE, 1, 8, 0);
-        }
-//        else
-//        {
-//            putLabel(*arearoi, (char*)"0", Point(0,0), 1, paint_salmon);
-//        }
-        /** approxPolyDP(InputArray curve, OutputArray approxCurve, double epsilon, bool closed) */
-//        drawContours(*arearoi, contours_eo, i, paint_indigo, 1, 8, hierarchy);
+    threshold(cs_diff, cs_diff, 80, 255, CV_THRESH_BINARY);
+    /**  @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
+    rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_dark_red, 2,8,0);
 
-//        fillPoly(*arearoi, elementPoints, &numberOfPoints, 1, paint_indigo, 8);
-//        const Point* elementPoints[1] = { *contours_poly[i] };
-//        int numberOfPoints = (int)contours_poly[i].size();
-//                fillPoly (contourMask, elementPoints, &numberOfPoints, 1, Scalar (0, 0, 0), 8);
-//        boundRect[i] = boundingRect( Mat(contours_poly[i]) );
-//        minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
-        
-//        if( (radius[i] > 35) && (OBJECT_CUSTOMER == METHOD) )  /* @fix change 35 to a const variable */
-//        {
-//            circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
-//            circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
-//            ///number_of_objects_detected++;
-//            ///circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
-//        }
+    if (SHOW_SWIPES)
+    {
+        pyrUp(cs_diff, cs_diff);
+        imshow(header, cs_diff);
     }
-    return true;
+    imshow(header, cs_diff);
+    
+    /** zeros is black in RGB */
+    Mat nonzeros_m;
+    findNonZero(cs_diff, nonzeros_m);
+    int nonzeros = (int)nonzeros_m.total();
+    
+    int pixels = (cs_diff.rows*cs_diff.cols);
+    float ratio =(float)nonzeros/(float)pixels;
+    
+    if (ratio < SWIPE_SENSITIVITY)
+        return true;
+    return false;
 }
+
+//bool isObjectPresent(Mat* arearoi, Mat* baseroi)
+//{
+//    Mat threshold_output;
+//    vector<vector<Point> > contours_eo;
+//    vector<Vec4i> hierarchy;
+//    
+//    Mat tmp1, tmp2;
+//    cvtColor(*baseroi, tmp1, COLOR_BGR2GRAY);
+//    cvtColor(*arearoi, tmp2, COLOR_BGR2GRAY);
+//    
+//    Mat cs_diff2 = tmp2 - tmp1;
+//    Mat cs_diff3 = *arearoi - *baseroi;
+//    Mat cs_diff = *baseroi - *arearoi;
+//    
+//    medianBlur(cs_diff, cs_diff, 15);
+//    cs_diff = cs_diff < CLUSTER_INTENSITY;
+//    
+//    cvtColor(cs_diff, cs_diff, COLOR_BGR2GRAY);
+//    
+//    Mat result2, laplace2;
+//    /**  @abstract Laplacian(InputArray src, OutputArray dst, int ddepth) */
+//    Laplacian(cs_diff, laplace2, CV_16S, 5);
+//    convertScaleAbs(laplace2, result2, (20+1)*0.25);
+//    
+//    cs_diff = result2;
+////    int THRESH = 100;
+//    /// Detect edges using Threshold
+//    threshold(cs_diff, threshold_output, CLUSTER_INTENSITY, 255, THRESH_BINARY );
+//    /// Find contours
+//    findContours( threshold_output, contours_eo, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+//    
+//    /// Approximate contours to polygons + get bounding rects and circles
+//    vector<vector<Point> > contours_poly( contours_eo.size() );
+//    vector<Point2f>center( contours_eo.size() );
+//    vector<float>radius( contours_eo.size() );
+//    
+//    rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_salmon);
+//    for( int i = 0; i < contours_eo.size(); i++ )
+//    {
+//        approxPolyDP( Mat(contours_eo[i]), contours_poly[i], 10, true );
+//        minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+//        if (radius[i] > 25)
+//        {
+////            putText(*arearoi, (char*)"1", Point(arearoi->cols/2, arearoi->rows/2), 4, 1, WHITE);
+////            putLabel(*arearoi, (char*)"1", Point(0,0), 1, paint_salmon);
+////            circle(*arearoi, center[i], radius[i]/2, WHITE, 1, 8, 0);
+//        }
+////        else
+////        {
+////            putLabel(*arearoi, (char*)"0", Point(0,0), 1, paint_salmon);
+////        }
+//        /** approxPolyDP(InputArray curve, OutputArray approxCurve, double epsilon, bool closed) */
+////        drawContours(*arearoi, contours_eo, i, paint_indigo, 1, 8, hierarchy);
+//
+////        fillPoly(*arearoi, elementPoints, &numberOfPoints, 1, paint_indigo, 8);
+////        const Point* elementPoints[1] = { *contours_poly[i] };
+////        int numberOfPoints = (int)contours_poly[i].size();
+////                fillPoly (contourMask, elementPoints, &numberOfPoints, 1, Scalar (0, 0, 0), 8);
+////        boundRect[i] = boundingRect( Mat(contours_poly[i]) );
+////        minEnclosingCircle( (Mat)contours_poly[i], center[i], radius[i] );
+//        
+////        if( (radius[i] > 35) && (OBJECT_CUSTOMER == METHOD) )  /* @fix change 35 to a const variable */
+////        {
+////            circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
+////            circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
+////            ///number_of_objects_detected++;
+////            ///circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
+////        }
+//    }
+//    return true;
+//}
 
 void countSwipes(int ICP, Mat* disp)
 {
@@ -333,11 +332,11 @@ int main() {
         /** create trackbar for cluster intesity of the pixel threshold */
         createTrackbar("Intensity(swipes)", "Controllers", &CLUSTER_INTENSITY, 255, 0 );
         
-        bool ICP = isObjectPresent(&current_swipe_area, &swipe_area);
+        bool ICP = isObjectPresent(&current_swipe_area, &swipe_area, (char*)"ICP", DARK);
         countSwipes(ICP, &displays);
 
         Mat bocl = frame(ROI_BEHIND_OBJ_CREATION_LINE);
-        bool IOP = isObjectPresent(&bocl, &bocl_print);
+        bool IOP = isObjectPresent(&bocl, &bocl_print, (char*)"IOP", BRIGHT);
         cout << IOP << endl;
         
         /** create trackbar for distance displacement tolerance */
