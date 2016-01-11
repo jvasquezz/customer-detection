@@ -73,7 +73,7 @@ extern bool verbose2;
 extern bool verbose_linkingCustomers;
 extern bool flag;
 extern bool OPTFLOW_ON;
-extern const int INSTANT_DISPLACEMENT_TOLERANCE;
+extern int INSTANT_DISPLACEMENT_TOLERANCE;
 extern const int CART_DETECTED_AT_START;
 extern const int OBJ_CREATION_LINE;
 extern const int OBJ_DELETION_LINE;
