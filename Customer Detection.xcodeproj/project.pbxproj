@@ -64,8 +64,8 @@
 			children = (
 				FE8465421C234EE300274A19 /* dependencies.hpp */,
 				FE816F1A1C3E3EEC000A610C /* main.cpp */,
-				FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */,
 				FE8EB5211C43252900E2257D /* archive.cpp */,
+				FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */,
 				FE8EB5231C432CC800E2257D /* Customer.h */,
 				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
 			);
