@@ -50,4 +50,5 @@ dependencies: \
   /usr/local/include/opencv2/features2d.hpp \
   /usr/local/include/opencv2/videoio/videoio.hpp \
   /Users/drifter/Documents/customer-detection/Customer\ Detection/inscribe.cpp \
-  /Users/drifter/Documents/customer-detection/Customer\ Detection/archive.cpp
+  /Users/drifter/Documents/customer-detection/Customer\ Detection/archive.cpp \
+  /Users/drifter/Documents/customer-detection/Customer\ Detection/Customer.h

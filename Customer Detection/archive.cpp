@@ -13,57 +13,60 @@
 //  Copyright © 2016 Rurouni. All rights reserved.
 //
 
-
 namespace archive
 {
-    void write(Customer* acustomer)
+    /** @abstract writes a customer object to file */
+    void write2(Customer* acustomer, char* destination)
     {
-        
-        
-        /** object's file destination naming */
-        char filename[20];
-        sprintf(filename, "c%d", anchor_customer->at(i).id);
-        fstream myFile(filename, ios::trunc | ios::out | ios::binary);
+        /*---------------------------------------------------------------------------*/
+        char customerfile[20];
+        strcat(customerfile, destination);
+        strcat(customerfile, ".bin");
+        fstream myFile(customerfile, ios::trunc | ios::out | ios::binary);
         /** check if file was opened correctly */
-        if (!myFile.is_open())
-        {
-            cout << "error opening file: " << "see line "<< __LINE__ << '\n';
-            continue;
-        }
+        if (!myFile.is_open()) { return; }
+        /** write object to binary file */
+        myFile.write((char*)&acustomer, sizeof(Customer));
+        myFile.seekg(0);    /** read from beginning */
+        myFile.close();     /** close file */
+    }
+    
+    /** @abstract writes a vector of Rectangles to binary file and to XML file, allows unique id for naming */
+    void write2(vector<Rect>* rcustomer, char* destfile)
+    {
+        /*---------------------------------------------------------------------------*/
+        /** writing all bounding Rects of tracked customer to file */
+        int sizeb = (int)rcustomer->size();
+        char customerbound[20];
+        strcat(customerbound, destfile);
+        strcat(customerbound, ".rects");
+        fstream rStoring(destfile, ios::trunc | ios::out | ios::binary);
+        rStoring.write((char*)&sizeb, sizeof(sizeb)); /** writes the size of vector */
+        rStoring.write((char*)&rcustomer[0], sizeb * sizeof(rcustomer));
+        rStoring.seekg(0);
+        rStoring.close();
         
         /*---------------------------------------------------------------------------*/
         /** write bounding starting points and dimensions in XML file */
-        FileStorage fsbounding("bounding_rects.xml", FileStorage::APPEND);
-        write( fsbounding, filename, anchor_customer->at(i).bounding);
+        FileStorage fsbounding("Rect.xml", FileStorage::APPEND);
+        write( fsbounding, destfile, *rcustomer);
         fsbounding.release();  /** release file */
-        
-        /*---------------------------------------------------------------------------*/
-        /** write object to binary file */
-        myFile.write((char*)&anchor_customer->at(i), sizeof(Customer));
-        myFile.seekg(0);    /** read from beginning */
-        myFile.close();     /** close file */
-        
+    }
+  
+    /** @abstract writes a vector of points to a .points file */
+    void write2(vector<Point2d>* pcustomer, char* pointfile)
+    {
         /*---------------------------------------------------------------------------*/
         /** writing all positions of tracked customer to file */
-        int sizep = (int)anchor_customer->at(i).position.size();
+        int sizep = (int)pcustomer->size();
         char customerpoint[20];
-        sprintf(customerpoint, "c%d.point", anchor_customer->at(i).id);
+        strcat(customerpoint, pointfile);
+        strcat(customerpoint, ".points");
         fstream pStoring(customerpoint, ios::trunc | ios::out | ios::binary);
         pStoring.write((char*)&sizep, sizeof(sizep)); /** writes the size of vector */
-        pStoring.write((char*)&anchor_customer->at(i).position[0], sizep * sizeof(anchor_customer->at(i).position));
+        pStoring.write((char*)&pcustomer, sizep * sizeof(pcustomer));
         pStoring.seekg(0);
         pStoring.close();
-        
-        /*---------------------------------------------------------------------------*/
-        /** writing all bounding Rects of tracked customer to file */
-        int sizeb = (int)anchor_customer->at(i).bounding.size();
-        char customerbound[20];
-        sprintf(customerbound, "c%d.rect", anchor_customer->at(i).id);
-        fstream rStoring(customerbound, ios::trunc | ios::out | ios::binary);
-        rStoring.write((char*)&sizeb, sizeof(sizeb)); /** writes the size of vector */
-        rStoring.write((char*)&anchor_customer->at(i).bounding[0], sizeb * sizeof(anchor_customer->at(i).bounding));
-        rStoring.seekg(0);
-        rStoring.close();
     }
 }
 #endif

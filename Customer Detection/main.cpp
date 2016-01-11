@@ -470,21 +470,15 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         BRANDED_FOR_DELETION.push_back(false);
         if ((anchor_customer->at(i).position.back().x/10 < OBJ_DELETION_LINE) /*|| (anchor_customer->at(i).idle > IDLE_LIMIT)*/)
         {
-            /** record time customer reaches end of line */
-            /** @FIX time(&anchor_customer->at(i).time_lapse.front()); */
+            /** record the time customer reaches end of line */
             
             /** object's file destination naming */
             char filename[20];
             sprintf(filename, "c%d", anchor_customer->at(i).id);
-            fstream myFile(filename, ios::trunc | ios::out | ios::binary);
-            /** check if file was opened correctly */
-            if (!myFile.is_open())
-            {
-                cout << "error opening file: " << "see line "<< __LINE__ << '\n';
-                continue;
-            }
             
-            archive::write(&anchor_customer->at(i));
+            /** archive the customer that reached end of line */
+            archive::write2(&anchor_customer->at(i), filename);
+            archive::write2(&anchor_customer->at(i).bounding, filename);
             
             /** release object from vector array and shrink vector when finished processing current frame */
             BRANDED_FOR_DELETION[i] = true;
