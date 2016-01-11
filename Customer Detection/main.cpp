@@ -606,12 +606,15 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             /** object's file destination naming */
             char filename[20];
             sprintf(filename, "c%d", anchor_customer->at(i).id);
-            
-            /** archive the customer that reached end of line */
-            ///archive::write2(&anchor_customer->at(i), filename);
-            ///archive::write2(&anchor_customer->at(i).position, filename);
-            archive::write2(&anchor_customer->at(i).bounding, filename);
-            archive::write2(&anchor_customer->at(i).time_lapse, filename);
+
+            /** @brief archive the customer that reached end of line
+             @code
+             archive::write2(&anchor_customer->at(i), filename);
+             archive::write2(&anchor_customer->at(i).position, filename);
+             archive::write2(&anchor_customer->at(i).bounding, filename);
+             archive::write2(&anchor_customer->at(i).time_lapse, filename);
+             @endcode
+             */
             
             /** release object from vector array and shrink vector when finished processing current frame */
             BRANDED_FOR_DELETION[i] = true;
