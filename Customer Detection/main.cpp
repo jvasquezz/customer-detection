@@ -6,11 +6,11 @@
 Smooth_tier smoothTier = GAUSSIAN;
 
 /** Verbose variable flags */
-bool SHOW_OVERLAPPING_BOXES = false;
+bool SHOW_OVERLAPPING_BOXES = true;
 bool SHOW_P2POINT_CONNECTIONS = false;
 bool BISECT_F2FRAME = false;
 bool SHOW_DISPLAY = true;
-bool SHOW_EDGES = false;
+bool SHOW_EDGES = true;
 bool OPTFLOW_ON = false;
 bool SHOW_DIFF = false;
 bool SHOW_ISOBJPRESENT = false;
@@ -41,7 +41,7 @@ float SWIPE_SENSITIVITY;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
-const int GRABS =   1000; ///3980; 1000;
+const int GRABS =   38000; ///3980; 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -837,12 +837,17 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         //double y = 0.0215 * pow(x,2) - 1.9131*x + 258.13;
         //double y = -2E-05x4 + 0.004x3 - 0.2728x2 + 5.4494x + 215.9;
         //double y = -1.78763782732825E-05x4 + 4.04896149117207E-03x3 - 2.72770070216495E-01x2 + 5.44941813894911E+00x + 2.15895787840160E+02;
-        double y = -1.78763782732825*(pow(10,-5))*pow(x,4) + 4.04896149117207*(pow(10,-3))*pow(x, 3) - 2.72770070216495*(pow(10,-1))*pow(x,2) + 5.44941813894911*(pow(10,0))*x + 2.15895787840160*(pow(10, 2));
         
+        double deltay = -1.78763782732825*(pow(10,-5))*pow(x,4) + 4.04896149117207*(pow(10,-3))*pow(x, 3) - 2.72770070216495*(pow(10,-1))*pow(x,2) + 5.44941813894911*(pow(10,0))*x + 2.15895787840160*(pow(10, 2));
+        double y = 1.35798831541779*pow(10,-8)*pow(x,6) - 4.73948097010849*pow(10,-6)*pow(x,5) + 6.42326111005843*pow(10,-4)*pow(x,4) - 4.24563885522503*pow(10,-2)*pow(x,3) + 1.42309792211442*pow(10,0)*pow(x,2) - 2.32005048745912*pow(10,1)*x + 3.65126214909706*pow(10,2);
+
+//        double y2 = 2.00585694520123*pow(10,-8)*pow(x,6) - 5.68028722109704*pow(10,-6)*pow(x,5) + 6.04364584426503*pow(10,-4)*pow(x,4) - 2.97539156275031*pow(10,-2)*pow(x,3) + 6.69688759659948*pow(10,-1)*pow(x,2) - 6.71282249106789*pow(10,0)*x + 3.91264240943647*pow(10,2);
+        double y2 = 450;
+
         /**  @brief filter boxes, ignore too small or big boxes when detecting customers */
         switch (MOCI) {
             case OBJECT_CUSTOMER:
-                if((inputBoxes->at(i).width < y) || (inputBoxes->at(i).width > 450))
+                if((inputBoxes->at(i).width < deltay) || (inputBoxes->at(i).width > y2))
                     continue;
                 break;
             case OBJECT_ITEM:
@@ -850,7 +855,7 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         } /**  end switch */
         
         if(OBJECT_CUSTOMER == MOCI)
-            ;  /** @breakpoint set breakpoint to see variables values */
+            deltay; y2; y; x; centroid;  /** @breakpoint set breakpoint to see variables values */
         
         Rect box = inputBoxes->at(i) + scaleFactor;
         box.height = image.rows;
