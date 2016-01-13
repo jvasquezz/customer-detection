@@ -18,6 +18,19 @@ bool verbose = 0;
 bool verbose2 = 0;
 
 
+void Knob(int state, void* pointer)
+{
+    if (SHOW_DIFF)
+    {
+        SHOW_DIFF = false;
+    }
+    else
+    {
+        SHOW_DIFF = true;
+    }
+}
+
+
 /** @remarks */
 /** use spreadsheet formula */
 /** find more data for more precise readings, with many sample points we can make our accuracy rate really high */
@@ -41,7 +54,7 @@ float SWIPE_SENSITIVITY;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
-const int GRABS =   100; //38000; ///3980; 1000;
+const int GRABS =   0; //38000; ///3980; 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -308,6 +321,12 @@ int main() {
         if (OPTFLOW_ON)
             imshow("sketchMat", sketchMat);
         
+//        createButton("SHOW_DIFF", Knob);
+        int state = 0;
+        createButton("show_diff",Knob,&state,CV_PUSH_BUTTON,0);
+
+//        createButton("dummy_button", my_button_cb, &my_data, CV_PUSH_BUTTON, 0);
+
         int c = waitKey(1);
         
         /** @discussion adds PAUSE key to video */
