@@ -19,12 +19,15 @@
 //#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
 #include "inscribe.cpp"
 #include "archive.cpp"
+#include "cast.cpp"
 #include "Customer.h"
 
 /** namespaces */
+using namespace::cast;
 using namespace::inscribe;
 using namespace::std;
 using namespace::cv;
+
 
 /**
  * @typedef Smooth_tier
@@ -48,6 +51,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
 deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, Pick_object targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, Smooth_tier SMOOTHTYPE/*MEDIAN*/);
 int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD, vector<Point2f>center);
 void CustomerOpticalFlow(int noObjects_TDOF);
+void castBars();
 
 
 extern deque<Customer> track_customer;
@@ -72,13 +76,13 @@ extern bool verbose;
 extern bool verbose2;
 extern bool verbose_linkingCustomers;
 extern bool flag;
-extern bool OPTFLOW_ON;
+extern int OPTFLOW_ON;
 extern int INSTANT_DISPLACEMENT_TOLERANCE;
 extern const int CART_DETECTED_AT_START;
 extern const int OBJ_CREATION_LINE;
 extern const int OBJ_DELETION_LINE;
-extern bool SHOW_EDGES;
-extern bool SHOW_DIFF;
+extern int SHOW_EDGES;
+extern int SHOW_DIFF;
 
 extern Rect ROI_CUSTOMERLINE_NARROW;
 extern Rect ROI_CUSTOMERLINE_WIDE;

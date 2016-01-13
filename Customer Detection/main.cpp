@@ -5,25 +5,6 @@
 /** Default smooth type to run application, change using spacebar */
 Smooth_tier smoothTier = GAUSSIAN;
 
-/** Verbose variable flags */
-bool SHOW_OVERLAPPING_BOXES = true;
-bool SHOW_P2POINT_CONNECTIONS = false;
-bool BISECT_F2FRAME = false;
-bool SHOW_DISPLAY = true;
-bool SHOW_EDGES = true;
-bool OPTFLOW_ON = false;
-bool SHOW_DIFF = false;
-bool SHOW_ISOBJPRESENT = false;
-bool verbose = 0;
-bool verbose2 = 0;
-
-
-void Knob(int* state, bool* controller)
-{
-    *controller = *state? true:false;
-}
-
-
 /** @remarks */
 /** use spreadsheet formula */
 /** find more data for more precise readings, with many sample points we can make our accuracy rate really high */
@@ -63,6 +44,11 @@ static int mu_uid = 0;
 unsigned int number_of_objects_detected;
 unsigned int Number_Of_Elements;
 
+//void turn(int* state, bool* controller)
+//{
+//    *controller = *state? true:false;
+//}
+
 
 /** List of Customers to track @see class Customer  */
 deque<Customer> track_customer;
@@ -94,8 +80,7 @@ bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background illumi
     if (drawrect)
         rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_dark_red, 2,8,0);
 
-    if (SHOW_ISOBJPRESENT)
-        imshow(header, diffroi);
+    imshow2(SHOW_ISOBJPRESENT, header, &diffroi);
     
     /** zero is black in RGB */
     Mat nonzeros_m;
@@ -201,13 +186,6 @@ int main() {
     stain[5] = paint_ade004;
     stain[6] = paint_blue;
     
-//    struct timeval start, end;
-//    long mtime, seconds, useconds;
-    
-//    gettimeofday(&start, NULL);
-//    usleep(2000);
-//    gettimeofday(&end, NULL);
-    
     
     /**  @brief main loop */
     bool flags = true;
@@ -220,7 +198,9 @@ int main() {
             }
             flags = false;
         }
-        
+
+        cast::castBars();
+
         number_of_objects_detected = 0;
         /** Skip frames in order to use video as it if it was different rate of FPS, */
         for(int i = 0; i < (int)FPS_CAP/FPS_DESIRED_FREQUENCY; i++)
@@ -305,18 +285,17 @@ int main() {
         sigma = HARD_CODED_SIGMA;
         createTrackbar( "Sigma (Laplacian)", "Controllers", &sigma, 30, 0 );;
         
+
+        
         if(verbose)
             printf("Sigma value %d\n", sigma);
         
-        if (SHOW_DISPLAY)
-            imshow("customer_line", displays);
-
-        if (OPTFLOW_ON)
-            imshow("sketchMat", sketchMat);
+        imshow2(SHOW_DISPLAY, "customer_line", &displays);
+        imshow2(OPTFLOW_ON, "sketchMat", &sketchMat);
         
 //        createButton("SHOW_DIFF", Knob);
-        int state = 0;
-        createButton("show_diff",Knob,&state,CV_PUSH_BUTTON,0);
+//        int state = 0;
+//        createButton("show_diff",Knob,&state,CV_PUSH_BUTTON,0);
 
 //        createButton("dummy_button", my_button_cb, &my_data, CV_PUSH_BUTTON, 0);
 
@@ -455,9 +434,9 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
         }
     }
     
-    if(SHOW_DIFF && OBJECT_CUSTOMER == METHOD)
-        imshow("differs39", differs);
-    
+    if(OBJECT_CUSTOMER == METHOD)
+        imshow2(SHOW_DIFF, "differs39", &differs);
+
     
     Mat smoothed, laplace, result;
     if(SMOOTHTYPE == MEDIAN)
@@ -476,8 +455,8 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     convertScaleAbs(laplace, result, (SIGMA+1)*0.25);
     
     
-    if(SHOW_EDGES)
-        imshow("result@#3", result);
+    imshow2(SHOW_EDGES, "result@#3", &result);
+    
     Mat threshold_output;
     vector<vector<Point> > contours_eo;
     vector<Vec4i> hierarchy;
@@ -878,8 +857,8 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
     }
     
     
-    if (SHOW_OVERLAPPING_BOXES && OBJECT_CUSTOMER == MOCI)
-        imshow("Amask", mask);
+    if (OBJECT_CUSTOMER == MOCI)
+        imshow2(SHOW_OVERLAPPING_BOXES, "Amask", &mask);
     
     vector<vector<Point>> contoursOverlap;
     /**  @brief Find contours in mask

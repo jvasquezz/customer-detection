@@ -30,6 +30,7 @@
 		FE8465421C234EE300274A19 /* dependencies.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = dependencies.hpp; sourceTree = "<group>"; };
 		FE8EB5211C43252900E2257D /* archive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = archive.cpp; sourceTree = "<group>"; };
 		FE8EB5231C432CC800E2257D /* Customer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Customer.h; sourceTree = "<group>"; };
+		FEE7895D1C46B912002F3E1E /* cast.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = cast.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +69,7 @@
 				FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */,
 				FE8EB5231C432CC800E2257D /* Customer.h */,
 				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
+				FEE7895D1C46B912002F3E1E /* cast.cpp */,
 			);
 			path = "Customer Detection";
 			sourceTree = "<group>";
