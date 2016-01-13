@@ -41,7 +41,7 @@ float SWIPE_SENSITIVITY;
 const int FPS_DESIRED_FREQUENCY = 10;
 const int HARD_CODED_SIGMA = 20;
 const int IDLE_LIMIT = 1000;
-const int GRABS =   38000; ///3980; 1000;
+const int GRABS =   100; //38000; ///3980; 1000;
 
 /** Global variables */
 Mat baseframe;
