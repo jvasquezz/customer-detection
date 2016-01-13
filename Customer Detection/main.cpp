@@ -18,16 +18,9 @@ bool verbose = 0;
 bool verbose2 = 0;
 
 
-void Knob(int state, void* pointer)
+void Knob(int* state, bool* controller)
 {
-    if (SHOW_DIFF)
-    {
-        SHOW_DIFF = false;
-    }
-    else
-    {
-        SHOW_DIFF = true;
-    }
+    *controller = *state? true:false;
 }
 
 
