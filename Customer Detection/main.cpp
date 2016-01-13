@@ -277,6 +277,8 @@ int main() {
         Mat current_swipe_area = frame(ROI_CASHIER_SWIPES);
 
         createTrackbar( "Sensitivity(swipes)", "Controllers", &Sensitivity, 200, 0 );
+        ///createTrackbar( TrackbarName, "Linear Blend", &alpha_slider, alpha_slider_max, on_trackbar );
+
         SWIPE_SENSITIVITY = (9800.0+ (float)Sensitivity) / (float)10000;
 
         /** create trackbar for cluster intesity of the pixel threshold */
