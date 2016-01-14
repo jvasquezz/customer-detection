@@ -599,12 +599,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
      every Customer in customerList to every newly detected object */
     vector<vector<double> > distance_obj_to_obj(SIZEAnchor, vector<double>(SIZECurrent));
     for (int a = 0; a < SIZEAnchor; a++)
-    {
-        for (int d = 0; d < SIZECurrent; d++)
-        {
-            distance_obj_to_obj[a][d] = 1000.0;
-        }
-    }
+        initializeVector(&distance_obj_to_obj[a], 1000.0, SIZECurrent);
     
     /** Initialize distances on 2D array
      The 2D array serves to save the index of the Customer list vs the newly detected list indexes */
@@ -713,7 +708,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             anchor_customer->at(a).time_lapse.push_back(current);
         }
         
-        if (SHOW_P2POINT_CONNECTIONS) {
+        if (SHOW_P2POINT_CONNECTIONS)
+        {
             Customer TEMP = anchor_customer->at(a);
             TMP = TEMP.position.back();
             TMPminus1 = TEMP.position[TEMP.position.size()-2];
