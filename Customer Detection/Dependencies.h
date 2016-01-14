@@ -44,8 +44,10 @@ extern Smooth_tier smoothTier;
 
 /** Function Headers (PROTOTYPES) */
 class Customer;
-void customerList_add( Customer ttcustomer);
-unsigned int customerList_add(deque<Customer> ttcustomers);
+template <typename T>
+void customerList_add(T ttcustomers);
+//void customerList_add( Customer ttcustomer);
+//unsigned int customerList_add(deque<Customer> ttcustomers);
 void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer);
 deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, Pick_object targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, Smooth_tier SMOOTHTYPE/*MEDIAN*/);
 int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD, vector<Point2f>center);

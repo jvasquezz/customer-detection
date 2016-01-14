@@ -28,7 +28,7 @@ float SWIPE_SENSITIVITY;
 const int FPS_DESIRED_FREQUENCY = 8;
 //const int HARD_CODED_SIGMA = 20;
 //const int IDLE_LIMIT = 1000;
-const int GRABS =  4800;//38000; //38000; ///3980; 1000;
+const int GRABS =  0; ///4800;//38000; //38000; ///3980; 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -328,28 +328,13 @@ int main() {
  @param ttcustomer an instance of Customer
  @see overloaded customerList_add(deque<Customer> customers)
  */
-void customerList_add( Customer ttcustomer)
+template <typename T>
+inline void customerList_add( T ttcustomer )
 {
     ttcustomer.id = mu_uid++;
     ttcustomer.track = false;
     track_customer.push_back(ttcustomer);
 }
-
-
-/**
- Instantiates newly detected objects
- @function customerList_add
- @param ttcustomers a queue of new Customer instances
- @see overloaded of customerList_add
- @return size of customer list
- */
-unsigned int customerList_add(deque<Customer> ttcustomers)
-{
-    for (int ttc_index = 0; ttc_index < ttcustomers.size(); ttc_index++)
-        customerList_add(ttcustomers[ttc_index]);
-    return (int)track_customer.size();
-}
-
 
 /**
  Will push new customer into its respective already IDed customer. If new, then create new customer
@@ -545,6 +530,17 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     return croppedObject;
 }
 
+/** @function template to initialize vector to a predetermined value
+    @param value the value to initialize the whole vector list 
+    @param allElements the number of elements to be initialized 
+    @param vectorList the list to initialize */
+template <typename T>
+inline void initializeVector(vector<T>* vectorList, T value, unsigned int allElements)
+{
+    for (int i = 0; i < allElements; i++)
+        vectorList->push_back(value);
+}
+
 
 /**
  Will push new customer into its respective already IDed customer. If new, then create new customer
@@ -631,7 +627,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
      In order to keep track of the elements that have linked vs the ones that might need instantiation */
     /** @fix use doubly linked list instead */
     vector<int> AconnectsD, DconnectsA;
-    
+    initializeVector(&AconnectsD, -1, SIZEAnchor);
+    initializeVector(&DconnectsA, -1, SIZECurrent);
     
     /**  starting value for n_min */
     double n_mins = 1000;
@@ -639,18 +636,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
      We cannot map on object to two, therefore, our mapping needs to be one-to-one to preserve integrity of Customer linking
      e.g. after selecting smallest double value we cannot use that smallest value's row and column to find the next */
     vector<bool> alpha, delta;
-    
-    for (int i = 0; i < SIZEAnchor; i++)
-    {
-        AconnectsD.push_back(-1);
-        alpha.push_back(true);
-    }
-    for (int i = 0; i < SIZECurrent; i++)
-    {
-        DconnectsA.push_back(-1);
-        delta.push_back(true);
-    }
-    
+    initializeVector(&alpha, true, SIZEAnchor);
+    initializeVector(&delta, true, SIZECurrent);
     
     /** temporary holder for a or d elements in A or D set */
     int _a_ = -1, _d_ = -1;
