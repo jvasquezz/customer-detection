@@ -19,11 +19,10 @@
 //#include <time.h>       /* time_t, struct tm, difftime, time, mktime */
 #include "inscribe.cpp"
 #include "archive.cpp"
-#include "cast.cpp"
+#include "Displays.cpp"
 #include "Customer.h"
 
 /** namespaces */
-using namespace::cast;
 using namespace::inscribe;
 using namespace::std;
 using namespace::cv;

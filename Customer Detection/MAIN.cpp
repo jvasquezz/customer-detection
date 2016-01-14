@@ -1,5 +1,5 @@
 
-#include "dependencies.hpp"
+#include "Dependencies.h"
 
 
 /** Default smooth type to run application, change using spacebar */
@@ -15,7 +15,7 @@ Smooth_tier smoothTier = GAUSSIAN;
 /** Threshold constant variables */
 int INSTANT_DISPLACEMENT_TOLERANCE = 250;
 const int CART_DETECTED_AT_START_OF_LINE = 100;
-const int OBJ_CREATION_LINE = 100;
+const int OBJ_CREATION_LINE = CART_DETECTED_AT_START_OF_LINE;
 const int OBJ_DELETION_LINE = 15;
 int CLUSTER_INTENSITY = 40;
 /** the tolerance rate when swiping an object, the lower the more tolerant, the higher the more sensitive @abstract set value between 0 and 1 */
@@ -25,10 +25,10 @@ float SWIPE_SENSITIVITY;
 /**  @brief set value to desired FPS rate, recommended 10-15 */
 /**  @discussion The human eye and its brain interface, the human visual system, can
  process 10 to 12 separate images per second, perceiving them individually */
-const int FPS_DESIRED_FREQUENCY = 10;
-const int HARD_CODED_SIGMA = 20;
-const int IDLE_LIMIT = 1000;
-const int GRABS =   0; //38000; ///3980; 1000;
+const int FPS_DESIRED_FREQUENCY = 8;
+//const int HARD_CODED_SIGMA = 20;
+//const int IDLE_LIMIT = 1000;
+const int GRABS =  4800;//38000; //38000; ///3980; 1000;
 
 /** Global variables */
 Mat baseframe;
@@ -80,7 +80,7 @@ bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background illumi
     if (drawrect)
         rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_dark_red, 2,8,0);
 
-    imshow2(SHOW_ISOBJPRESENT, header, &diffroi);
+    displays::imshow2(SHOW_ISOBJPRESENT, header, &diffroi);
     
     /** zero is black in RGB */
     Mat nonzeros_m;
@@ -92,7 +92,6 @@ bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background illumi
         return true;
     return false;
 }
-
 /**
  @discussion overloaded of isObjectPresent
  @function isObjectPresent
@@ -140,6 +139,7 @@ int main() {
     int sigma = 3;  ///default sigma at 3
     Smooth_tier smoothType = smoothTier;
     int ksize = (sigma*5)| 1;
+    sigma = 20;
     SWIPE_SENSITIVITY = Sensitivity / (float)10000;
     
     // insert code here...
@@ -154,8 +154,6 @@ int main() {
     
     baseframe = imread(BASEFRAME_DIR);
     namedWindow("Controllers", 0);
-//    namedWindow( "Laplacian", 0 );
-//    namedWindow( "SWIPE", 0 );
     
     /**  @constructor Rect
      Rect_(_Tp _x, _Tp _y, _Tp _width, _Tp _height) */
@@ -164,8 +162,6 @@ int main() {
     Rect ROI_CUSTOMERLINE(0,baseframe.rows/3.3,baseframe.cols,baseframe.rows/3.3);
     Rect ROI_CUSTOMERLINE_NARROW(0,baseframe.rows/2.45,1280,113);  ////113 vs 131 vs 145
     Rect ROI_CONVEYOR_BELT(baseframe.cols/2.61,baseframe.rows/4.7,250,112);
-//    Rect ROI_CASHIER_SWIPES(425,183,40,35);  ///436,190,21,21); ///445,180,22,21); ///420,170, 55, 38);
-//    Rect ROI_CASHIER_SWIPES(420,183,53,45);
     Rect ROI_CASHIER_SWIPES(415,170,66,58);
     Rect ROI_BEHIND_OBJ_CREATION_LINE(800,203,170,247);
     
@@ -199,8 +195,9 @@ int main() {
             flags = false;
         }
 
-        cast::castBars();
+        displays::castBars();
 
+        
         number_of_objects_detected = 0;
         /** Skip frames in order to use video as it if it was different rate of FPS, */
         for(int i = 0; i < (int)FPS_CAP/FPS_DESIRED_FREQUENCY; i++)
@@ -222,9 +219,9 @@ int main() {
         customer_line = frame(ROI_CUSTOMERLINE_NARROW);
         customer_line.copyTo(untouch_frame);
         Mat displays = frame(ROI_CUSTOMERLINE_WIDE);
-        char buffer[20];
-        sprintf(buffer, "%6d", CAP_CURRENT_FRAME);
-        putLabel(displays, buffer, Point(30,20), 6, Scalar2(76,153,0));
+        char density_text[20];
+        sprintf(density_text, "%6d", CAP_CURRENT_FRAME);
+        putLabel(displays, density_text, Point(30,20), 6, Scalar2(76,153,0));
         
         /** @brief ignore returning values when detecting items on conveyor */
         deque<Customer> dev_null = encapsulateObjects(&conveyorbelt, &belt_print, OBJECT_ITEM, ksize, sigma, thresh, smoothType);
@@ -244,7 +241,7 @@ int main() {
         /**  @brief put uid label on Customers in track customer mode */
         for (int i = 0; i < track_customer.size(); i++)
         {
-            if (track_customer[i].track)
+            if (true == track_customer[i].track)
             {
                 char identifier[20];
                 sprintf(identifier, " C%d %dx%d", track_customer[i].id, track_customer[i].bounding.back().width, track_customer[i].bounding.back().height);
@@ -272,35 +269,23 @@ int main() {
         
         bool _at_barcode_reader_ = isObjectPresent(&current_swipe_area, &swipe_area, (char*)"at-barcode-reader", DARK, true);
         countSwipes(_at_barcode_reader_, &displays);
-
-//        Mat bocl = frame(ROI_BEHIND_OBJ_CREATION_LINE);
-//        bool IOP = isObjectPresent(&bocl, &bocl_print, (char*)"IOP", BRIGHT);
-//        cout << IOP << endl;
         
         /** create trackbar for distance displacement tolerance */
         createTrackbar( "Displacement tolerance", "Controllers", &INSTANT_DISPLACEMENT_TOLERANCE, 1280, 0 );
         
         
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
-        sigma = HARD_CODED_SIGMA;
-        createTrackbar( "Sigma (Laplacian)", "Controllers", &sigma, 30, 0 );;
-        
+        createTrackbar( "Sigma (Laplacian)", "Controllers", &sigma, 50, 0 );;
+        ///ksize = (sigma*5)| 1;
 
         
         if(verbose)
             printf("Sigma value %d\n", sigma);
         
-        imshow2(SHOW_DISPLAY, "customer_line", &displays);
-        imshow2(OPTFLOW_ON, "sketchMat", &sketchMat);
+        displays::imshow2(SHOW_DISPLAY, "customer_line", &displays);
+        displays::imshow2(OPTFLOW_ON, "sketchMat", &sketchMat);
         
-//        createButton("SHOW_DIFF", Knob);
-//        int state = 0;
-//        createButton("show_diff",Knob,&state,CV_PUSH_BUTTON,0);
-
-//        createButton("dummy_button", my_button_cb, &my_data, CV_PUSH_BUTTON, 0);
-
         int c = waitKey(1);
-        
         /** @discussion adds PAUSE key to video */
         if (c == 'p')
         {
@@ -435,7 +420,7 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     }
     
     if(OBJECT_CUSTOMER == METHOD)
-        imshow2(SHOW_DIFF, "differs39", &differs);
+        displays::imshow2(SHOW_DIFF, "differs39", &differs);
 
     
     Mat smoothed, laplace, result;
@@ -455,7 +440,7 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
     convertScaleAbs(laplace, result, (SIGMA+1)*0.25);
     
     
-    imshow2(SHOW_EDGES, "result@#3", &result);
+    displays::imshow2(SHOW_EDGES, "result@#3", &result);
     
     Mat threshold_output;
     vector<vector<Point> > contours_eo;
@@ -578,7 +563,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     {
         for (int i = 0; i < SIZECurrent; i++)
         {
-            if (current_detected->at(i).position.back().x/10 > CART_DETECTED_AT_START_OF_LINE)
+            if (current_detected->at(i).position.back().x/10 >= CART_DETECTED_AT_START_OF_LINE)
             {
                 customerList_add(current_detected->at(i));
             }
@@ -622,7 +607,6 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         for (int d = 0; d < SIZECurrent; d++)
         {
             distance_obj_to_obj[a][d] = 1000.0;
-            ///printf("distance: (%d,%d) %.1f\n", a, d, distance_obj_to_obj[a][d]);
         }
     }
     
@@ -742,11 +726,6 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
             anchor_customer->at(a).time_lapse.push_back(current);
         }
         
-        //        if (AconnectsD[a] == -1)
-        //            anchor_customer->at(a).idle++;
-        //        else
-        //            anchor_customer->at(a).idle = 0;
-        
         if (SHOW_P2POINT_CONNECTIONS) {
             Customer TEMP = anchor_customer->at(a);
             TMP = TEMP.position.back();
@@ -764,8 +743,8 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
         /** create new Customer only if started behind thresh */
         /** @note objects are created as they are detected behind threshold line so if it detects one cart but it goes away and another cart comes in then it wont create a new object for that new cart but it will fill the previously created
          Consequently, the data beyong this threshold point is unreliable */
-        if ( (DconnectsA[i] == -1) && ///(DconnectsA[i] == -1) &&
-            (current_detected->at(i).position[0].x/10 > CART_DETECTED_AT_START_OF_LINE))
+        if ((current_detected->at(i).position[0].x/10 > CART_DETECTED_AT_START_OF_LINE) &&
+            (DconnectsA[i] == -1))
         {
             customerList_add(current_detected->at(i));
         }
@@ -775,19 +754,20 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
     /**  @brief CSIZE: number of customer positions to push into arrayList of Customers */
     const unsigned int CSIZE = (int)min(SIZECurrent, SIZEAnchor);
     /**  @brief push back updated position of customers into array of position in customer */
-    for (int linker_index = 0; linker_index < CSIZE; linker_index++)
+    for (int i = 0; i < CSIZE; i++)
     {
-        if (distance_obj_to_obj[linker_index][AconnectsD[linker_index]] > INSTANT_DISPLACEMENT_TOLERANCE ||
-            (AconnectsD[linker_index] == -1))
+        /** distance between object from previous and next frame */
+        if (distance_obj_to_obj[i][AconnectsD[i]] > INSTANT_DISPLACEMENT_TOLERANCE ||
+            (AconnectsD[i] == -1))
             continue;
         
         /**  @brief set track to TRUE when threshold is crossed */
-        if (!anchor_customer->at(linker_index).track)
+        if (anchor_customer->at(i).track == false)
         {
-            if ((int)(anchor_customer->at(linker_index).position[0].x/10) > CART_DETECTED_AT_START_OF_LINE &&
-                (int)(anchor_customer->at(linker_index).position.back().x/10) < OBJ_CREATION_LINE)
+            if ((int)(anchor_customer->at(i).position[0].x/10) >= CART_DETECTED_AT_START_OF_LINE &&
+                (int)(anchor_customer->at(i).position.back().x/10) < OBJ_CREATION_LINE)
             {
-                anchor_customer->at(linker_index).track = true;
+                anchor_customer->at(i).track = true;
                 /** @FIX time(&anchor_customer->at(linker_index).time_lapse.front()); */
             }
         }
@@ -826,16 +806,12 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
         Rect r = Rect(inputBoxes->at(i));
         Point2d centroid = Point2d(r.x + r.width / 2, r.y + r.height / 2);
         double x = centroid.x/10;
-        //double y = 0.0002* pow(x,3) - 0.0088 * pow(x,2) - 0.5194 * x + 220.71;
-        //double y = 0.0215 * pow(x,2) - 1.9131*x + 258.13;
-        //double y = -2E-05x4 + 0.004x3 - 0.2728x2 + 5.4494x + 215.9;
-        //double y = -1.78763782732825E-05x4 + 4.04896149117207E-03x3 - 2.72770070216495E-01x2 + 5.44941813894911E+00x + 2.15895787840160E+02;
-        
         double deltay = -1.78763782732825*(pow(10,-5))*pow(x,4) + 4.04896149117207*(pow(10,-3))*pow(x, 3) - 2.72770070216495*(pow(10,-1))*pow(x,2) + 5.44941813894911*(pow(10,0))*x + 2.15895787840160*(pow(10, 2));
         double y = 1.35798831541779*pow(10,-8)*pow(x,6) - 4.73948097010849*pow(10,-6)*pow(x,5) + 6.42326111005843*pow(10,-4)*pow(x,4) - 4.24563885522503*pow(10,-2)*pow(x,3) + 1.42309792211442*pow(10,0)*pow(x,2) - 2.32005048745912*pow(10,1)*x + 3.65126214909706*pow(10,2);
-
+//        deltay = 6.88736305719511*pow(10,-8)*pow(x,6) - 2.32371465749889*pow(10,-5)*pow(x,5) + 3.02374585969216*pow(10,-3)*pow(x,4) - 1.89810185818492*pow(10,-1)*pow(x,3) + 5.92618321560088*pow(10,0)*pow(x,2) - 8.82624849732809*pow(10,1)*x + 7.38023712095962*pow(10,2);
 //        double y2 = 2.00585694520123*pow(10,-8)*pow(x,6) - 5.68028722109704*pow(10,-6)*pow(x,5) + 6.04364584426503*pow(10,-4)*pow(x,4) - 2.97539156275031*pow(10,-2)*pow(x,3) + 6.69688759659948*pow(10,-1)*pow(x,2) - 6.71282249106789*pow(10,0)*x + 3.91264240943647*pow(10,2);
         double y2 = 450;
+        y2 = deltay + 230;
 
         /**  @brief filter boxes, ignore too small or big boxes when detecting customers */
         switch (MOCI) {
@@ -858,7 +834,7 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
     
     
     if (OBJECT_CUSTOMER == MOCI)
-        imshow2(SHOW_OVERLAPPING_BOXES, "Amask", &mask);
+        displays::imshow2(SHOW_OVERLAPPING_BOXES, "Amask", &mask);
     
     vector<vector<Point>> contoursOverlap;
     /**  @brief Find contours in mask
