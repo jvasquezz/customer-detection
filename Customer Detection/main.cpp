@@ -26,8 +26,6 @@ float SWIPE_SENSITIVITY;
 /**  @discussion The human eye and its brain interface, the human visual system, can
  process 10 to 12 separate images per second, perceiving them individually */
 const int FPS_DESIRED_FREQUENCY = 8;
-//const int HARD_CODED_SIGMA = 20;
-//const int IDLE_LIMIT = 1000;
 const int GRABS =  0; ///4800;//38000; //38000; ///3980; 1000;
 
 /** Global variables */
@@ -41,97 +39,10 @@ vector<Point2d> c;
 /** unique Customer identification number */
 static int mu_uid = 0;
 
-unsigned int number_of_objects_detected;
 unsigned int Number_Of_Elements;
-
-//void turn(int* state, bool* controller)
-//{
-//    *controller = *state? true:false;
-//}
-
 
 /** List of Customers to track @see class Customer  */
 deque<Customer> track_customer;
-
-/**
- @discussion checks given ROI from frame if there is an object or item. Uses basic substraction.
- @function isObjectPresent
- @param arearoi the current frame to be evaluated
- @param baseroi the base frame region of interest to compare arearoi to
- @param passes a title to show window of the changes done to the image
- @param illumination of the background
- @see isObjectPresent overloaded
- @return true if there is an object false otherwise
- */
-bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background illumination, bool drawrect)
-{
-    Mat diffroi;
-    if (DARK == illumination)
-        diffroi = *arearoi - *baseroi;
-    else if (BRIGHT == illumination)
-        diffroi = *baseroi - *arearoi;
-    
-    medianBlur(diffroi, diffroi, 15);
-    diffroi = diffroi < CLUSTER_INTENSITY;
-    
-    cvtColor(diffroi, diffroi, COLOR_BGR2GRAY);
-    threshold(diffroi, diffroi, CLUSTER_INTENSITY, 255, CV_THRESH_BINARY);
-    /** @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
-    if (drawrect)
-        rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_dark_red, 2,8,0);
-
-    displays::imshow2(SHOW_ISOBJPRESENT, header, &diffroi);
-    
-    /** zero is black in RGB */
-    Mat nonzeros_m;
-    findNonZero(diffroi, nonzeros_m);
-    int nonzeros = (int)nonzeros_m.total();
-    int pixels = (diffroi.rows*diffroi.cols);
-    float ratio =(float)nonzeros/(float)pixels;
-    if (ratio < SWIPE_SENSITIVITY)
-        return true;
-    return false;
-}
-/**
- @discussion overloaded of isObjectPresent
- @function isObjectPresent
- @param arearoi the current frame to be evaluated
- @param baseroi the base frame region of interest to compare arearoi to
- @param lighting of the background
- @see isObjectPresent overloaded
- @return true if there is an object false otherwise
- */
-bool isObjectPresent(Mat* arearoi, Mat* baseroi, Background lighting)
-{
-    return isObjectPresent(arearoi, baseroi, (char*)"is object present", lighting, false);
-}
-
-/**
- @discussion counts the number of swipes the cashier performs
- @function countSwipes
- @param foundObj if there is an object in current frame
- @param disp matrix where we display count
- @see isObjectPresent gets foundObj value
- */
-void countSwipes(bool foundObj, Mat* disp)
-{
-    static bool last_ICP;
-    static int swipes, LICP;
-    /** if there is a change in frame and it detects and object */
-    if (foundObj != last_ICP && foundObj == false && LICP > 2)
-    {
-        swipes++;
-        LICP = 0;
-    }
-    
-    if (foundObj)
-        LICP++;
-    last_ICP = foundObj;
-    
-    char swipetext[20];
-    sprintf(swipetext, "s%5d", swipes);
-    putLabel(*disp, swipetext, Point(410,90), 5, Scalar2(64,64,64));
-}
 
 /**  @function MAIN */
 int main() {
@@ -194,11 +105,10 @@ int main() {
             }
             flags = false;
         }
-
-        displays::castBars();
-
         
-        number_of_objects_detected = 0;
+        displays::castBars();
+        
+        
         /** Skip frames in order to use video as it if it was different rate of FPS, */
         for(int i = 0; i < (int)FPS_CAP/FPS_DESIRED_FREQUENCY; i++)
             cap >> frame;
@@ -213,7 +123,7 @@ int main() {
             cout << "------------------------\n\n";
         }
         
-
+        
         /**  @abstract set regions of interest (ROI) to scan for objects  */
         Mat conveyorbelt = frame(ROI_CONVEYOR_BELT);
         customer_line = frame(ROI_CUSTOMERLINE_NARROW);
@@ -229,12 +139,6 @@ int main() {
         deque<Customer> new_detected =
         encapsulateObjects(&customer_line, &line_print, OBJECT_CUSTOMER, ksize, sigma, thresh, smoothType);
         
-        /** @fix */
-        //        if (!number_of_objects_detected) {
-        //            baseframe = frame;
-        //            imshow("BASEFRAME",baseframe);
-        //        }
-        
         /** @brief  linkCustomers pushes currently detected to its respective customer in the list, create if is a new customer */
         linkCustomers(&new_detected, &track_customer);
         
@@ -246,7 +150,6 @@ int main() {
                 char identifier[20];
                 sprintf(identifier, " C%d %dx%d", track_customer[i].id, track_customer[i].bounding.back().width, track_customer[i].bounding.back().height);
                 putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 10, paint_royal_blue);
-                //putLabel(customer_line, identifier, track_customer[i].bounding.back().tl(), 3.5, paint_royal_blue);
             } else
             {
                 char identifier[20];
@@ -258,12 +161,12 @@ int main() {
         
         /**  @brief count swipes by cashier */
         Mat current_swipe_area = frame(ROI_CASHIER_SWIPES);
-
+        
         createTrackbar( "Sensitivity(swipes)", "Controllers", &Sensitivity, 200, 0 );
         ///createTrackbar( TrackbarName, "Linear Blend", &alpha_slider, alpha_slider_max, on_trackbar );
-
+        
         SWIPE_SENSITIVITY = (9800.0+ (float)Sensitivity) / (float)10000;
-
+        
         /** create trackbar for cluster intesity of the pixel threshold */
         createTrackbar("Intensity(swipes)", "Controllers", &CLUSTER_INTENSITY, 255, 0 );
         
@@ -277,7 +180,7 @@ int main() {
         /** Update sigma using trackbar @note change blur method using spacebar, @see smoothType */
         createTrackbar( "Sigma (Laplacian)", "Controllers", &sigma, 50, 0 );;
         ///ksize = (sigma*5)| 1;
-
+        
         
         if(verbose)
             printf("Sigma value %d\n", sigma);
@@ -294,7 +197,7 @@ int main() {
             imshow("customer_line", displays);
             waitKey(0);
         }
-
+        
         /** @abstract saves current image displayed */
         if (c == 'w')
         {
@@ -321,13 +224,65 @@ int main() {
     return 0;
 }
 
+/** @function isObjectPresent */
+bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background illumination, bool drawrect)
+{
+    Mat diffroi;
+    if (DARK == illumination)
+        diffroi = *arearoi - *baseroi;
+    else if (BRIGHT == illumination)
+        diffroi = *baseroi - *arearoi;
+    
+    medianBlur(diffroi, diffroi, 15);
+    diffroi = diffroi < CLUSTER_INTENSITY;
+    
+    cvtColor(diffroi, diffroi, COLOR_BGR2GRAY);
+    threshold(diffroi, diffroi, CLUSTER_INTENSITY, 255, CV_THRESH_BINARY);
+    /** @brief rectangle(Mat& img, Point pt1, Point pt2, const Scalar& color, int thickness=1, int lineType=8, int shift=0) */
+    if (drawrect)
+        rectangle(*arearoi, Point(0,0), Point(arearoi->cols-1,arearoi->rows-1), paint_dark_red, 2,8,0);
 
-/**
- Instantiates newly detected objects
- @function customerList_add
- @param ttcustomer an instance of Customer
- @see overloaded customerList_add(deque<Customer> customers)
- */
+    displays::imshow2(SHOW_ISOBJPRESENT, header, &diffroi);
+    
+    /** zero is black in RGB */
+    Mat nonzeros_m;
+    findNonZero(diffroi, nonzeros_m);
+    int nonzeros = (int)nonzeros_m.total();
+    int pixels = (diffroi.rows*diffroi.cols);
+    float ratio =(float)nonzeros/(float)pixels;
+    if (ratio < SWIPE_SENSITIVITY)
+        return true;
+    return false;
+}
+
+/** @function isObjectPresent */
+bool isObjectPresent(Mat* arearoi, Mat* baseroi, Background lighting)
+{
+    return isObjectPresent(arearoi, baseroi, (char*)"is object present", lighting, false);
+}
+
+/** @function countSwipes */
+void countSwipes(bool foundObj, Mat* disp)
+{
+    static bool last_ICP;
+    static int swipes, LICP;
+    /** if there is a change in frame and it detects and object */
+    if (foundObj != last_ICP && foundObj == false && LICP > 2)
+    {
+        swipes++;
+        LICP = 0;
+    }
+    
+    if (foundObj)
+        LICP++;
+    last_ICP = foundObj;
+    
+    char swipetext[20];
+    sprintf(swipetext, "s%5d", swipes);
+    putLabel(*disp, swipetext, Point(410,90), 5, Scalar2(64,64,64));
+}
+
+/** @function customerList_add */
 template <typename T>
 inline void customerList_add( T ttcustomer )
 {
@@ -453,7 +408,6 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
         {
             circle( *instanceROI, center[i], (int)radius[i]/1.5, paint_blue, 1, 8, 0 );
             circle( *instanceROI, center[i], 2, paint_green, 2, 8, 0);
-            ///number_of_objects_detected++;
             ///circle(*instanceROI, center[i], 8, paint_red, 2, 4, 0);
         }
     }
@@ -769,16 +723,7 @@ void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_cu
 }
 
 
-/**
- Merges overlapping boxes in order to show only one box per object detected
- @function mergeOverlappingBoxes
- @param inputBoxes is an array of all the boxes found in frame
- @param image is pointer to matrix of area of interest (ROI)
- @param outputBoxes will hold the new set of boxes to be printed on image
- @param MOCI the method which indicates what object is being detected. i.e. if OBJ_CUSTOMER we set minimun area of rectangle higher then if OBJ_ITEM
- @see overloaded customerList_add(deque<Customer> customers)
- @return number of outPut boxes, likely to be decreased compared to inputBoxes
- */
+/** @function mergeOverlappingBoxes */
 int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *outputBoxes, int MOCI, vector<Point2f>center/*(method object customer/item)*/)
 {
     Mat mask = Mat::zeros(image.size(), CV_8UC1); // Mask of original image
@@ -832,13 +777,7 @@ int mergeOverlappingBoxes(vector<Rect> *inputBoxes, Mat &image, vector<Rect> *ou
 }
 
 
-/**
- Draws line as the object is moving
- @function CustomerOpticalFlow
- @param noObjects_TDOF number of objects to be tracked in mask. TDOF(ToDisplayOpticalFlow)
- @see where is called, in function encapsulateObjects
- @see OPTFLOW_ON switch at top
- */
+/** @function CustomerOpticalFlow */
 void CustomerOpticalFlow(int noObjects_TDOF)
 {
     vector<Point2d> a;

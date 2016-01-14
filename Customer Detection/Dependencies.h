@@ -44,14 +44,72 @@ extern Smooth_tier smoothTier;
 
 /** Function Headers (PROTOTYPES) */
 class Customer;
+
+/**
+ Instantiates newly detected objects
+ @function customerList_add
+ @param ttcustomer an instance of Customer
+ @see overloaded customerList_add(deque<Customer> customers)
+ */
 template <typename T>
 void customerList_add(T ttcustomers);
-//void customerList_add( Customer ttcustomer);
-//unsigned int customerList_add(deque<Customer> ttcustomers);
+
 void linkCustomers(deque<Customer>* current_detected, deque<Customer>* anchor_customer);
 deque<Customer> encapsulateObjects(Mat* instanceROI, Mat* baseIMG, Pick_object targetObject/*OBJECT_CUSTOMER*/, int KSIZE, int SIGMA, int THRESH, Smooth_tier SMOOTHTYPE/*MEDIAN*/);
+
+/**
+ Merges overlapping boxes in order to show only one box per object detected
+ @function mergeOverlappingBoxes
+ @param inputBoxes is an array of all the boxes found in frame
+ @param image is pointer to matrix of area of interest (ROI)
+ @param outputBoxes will hold the new set of boxes to be printed on image
+ @param MOCI the method which indicates what object is being detected. i.e. if OBJ_CUSTOMER we set minimun area of rectangle higher then if OBJ_ITEM
+ @see overloaded customerList_add(deque<Customer> customers)
+ @return number of outPut boxes, likely to be decreased compared to inputBoxes
+ */
 int mergeOverlappingBoxes(std::vector<cv::Rect> *inputBoxes, cv::Mat &image, std::vector<cv::Rect> *outputBoxes, int METHOD, vector<Point2f>center);
+
+/**
+ @discussion checks given ROI from frame if there is an object or item. Uses basic substraction.
+ @function isObjectPresent
+ @param arearoi the current frame to be evaluated
+ @param baseroi the base frame region of interest to compare arearoi to
+ @param passes a title to show window of the changes done to the image
+ @param illumination of the background
+ @see isObjectPresent overloaded
+ @return true if there is an object false otherwise
+ */
+bool isObjectPresent(Mat* arearoi, Mat* baseroi, char* header, Background illumination, bool drawrect);
+
+/**
+ @discussion overloaded of isObjectPresent
+ @function isObjectPresent
+ @param arearoi the current frame to be evaluated
+ @param baseroi the base frame region of interest to compare arearoi to
+ @param lighting of the background
+ @see isObjectPresent overloaded
+ @return true if there is an object false otherwise
+ */
+bool isObjectPresent(Mat* arearoi, Mat* baseroi, Background lighting);
+
+/**
+ @discussion counts the number of swipes the cashier performs
+ @function countSwipes
+ @param foundObj if there is an object in current frame
+ @param disp matrix where we display count
+ @see isObjectPresent gets foundObj value
+ */
+void countSwipes(bool foundObj, Mat* disp);
+
+/**
+ Draws line as the object is moving
+ @function CustomerOpticalFlow
+ @param noObjects_TDOF number of objects to be tracked in mask. TDOF(ToDisplayOpticalFlow)
+ @see where is called, in function encapsulateObjects
+ @see OPTFLOW_ON switch at top
+ */
 void CustomerOpticalFlow(int noObjects_TDOF);
+
 void castBars();
 
 
