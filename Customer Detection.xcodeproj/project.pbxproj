@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FE0EF9561C2C240C00B49547 /* ORmethods.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE0EF9551C2C240C00B49547 /* ORmethods.cpp */; };
-		FE84653C1C23440D00274A19 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE84653B1C23440D00274A19 /* main.cpp */; };
+		FE816F1B1C3E3EEC000A610C /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FE816F1A1C3E3EEC000A610C /* main.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,9 +24,13 @@
 
 /* Begin PBXFileReference section */
 		FE0EF9551C2C240C00B49547 /* ORmethods.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ORmethods.cpp; sourceTree = "<group>"; };
+		FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = inscribe.cpp; sourceTree = "<group>"; };
+		FE816F1A1C3E3EEC000A610C /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		FE8465381C23440D00274A19 /* Customer Detection */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Customer Detection"; sourceTree = BUILT_PRODUCTS_DIR; };
-		FE84653B1C23440D00274A19 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		FE8465421C234EE300274A19 /* this.dependencies.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = this.dependencies.hpp; sourceTree = "<group>"; };
+		FE8465421C234EE300274A19 /* Dependencies.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Dependencies.h; sourceTree = "<group>"; };
+		FE8EB5211C43252900E2257D /* archive.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = archive.cpp; sourceTree = "<group>"; };
+		FE8EB5231C432CC800E2257D /* Customer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Customer.h; sourceTree = "<group>"; };
+		FEE7895D1C46B912002F3E1E /* Displays.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Displays.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,8 +63,12 @@
 		FE84653A1C23440D00274A19 /* Customer Detection */ = {
 			isa = PBXGroup;
 			children = (
-				FE84653B1C23440D00274A19 /* main.cpp */,
-				FE8465421C234EE300274A19 /* this.dependencies.hpp */,
+				FE816F1A1C3E3EEC000A610C /* main.cpp */,
+				FE8EB5231C432CC800E2257D /* Customer.h */,
+				FE8465421C234EE300274A19 /* Dependencies.h */,
+				FE8EB5211C43252900E2257D /* archive.cpp */,
+				FE7F48ED1C3E32BC00CC12C8 /* inscribe.cpp */,
+				FEE7895D1C46B912002F3E1E /* Displays.cpp */,
 				FE0EF9551C2C240C00B49547 /* ORmethods.cpp */,
 			);
 			path = "Customer Detection";
@@ -123,8 +130,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FE84653C1C23440D00274A19 /* main.cpp in Sources */,
-				FE0EF9561C2C240C00B49547 /* ORmethods.cpp in Sources */,
+				FE816F1B1C3E3EEC000A610C /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,7 +219,8 @@
 		FE8465401C23440D00274A19 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				LIBRARY_SEARCH_PATHS = "/usr/local/lib\n";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				LIBRARY_SEARCH_PATHS = /usr/local/opt/opencv3/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_calib3d",
 					"-lopencv_core",
@@ -234,14 +241,15 @@
 					"-lopencv_videostab\n",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = /usr/local/include;
+				USER_HEADER_SEARCH_PATHS = /usr/local/opt/opencv3/include;
 			};
 			name = Debug;
 		};
 		FE8465411C23440D00274A19 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				LIBRARY_SEARCH_PATHS = "/usr/local/lib\n";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				LIBRARY_SEARCH_PATHS = /usr/local/opt/opencv3/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_calib3d",
 					"-lopencv_core",
@@ -262,7 +270,7 @@
 					"-lopencv_videostab\n",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = /usr/local/include;
+				USER_HEADER_SEARCH_PATHS = /usr/local/opt/opencv3/include;
 			};
 			name = Release;
 		};
