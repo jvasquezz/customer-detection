@@ -220,7 +220,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
-				LIBRARY_SEARCH_PATHS = "/usr/local/lib\n";
+				LIBRARY_SEARCH_PATHS = /usr/local/opt/opencv3/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_calib3d",
 					"-lopencv_core",
@@ -241,7 +241,7 @@
 					"-lopencv_videostab\n",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = /usr/local/include;
+				USER_HEADER_SEARCH_PATHS = /usr/local/opt/opencv3/include;
 			};
 			name = Debug;
 		};
@@ -249,7 +249,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
-				LIBRARY_SEARCH_PATHS = "/usr/local/lib\n";
+				LIBRARY_SEARCH_PATHS = /usr/local/opt/opencv3/lib;
 				OTHER_LDFLAGS = (
 					"-lopencv_calib3d",
 					"-lopencv_core",
@@ -270,7 +270,7 @@
 					"-lopencv_videostab\n",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = /usr/local/include;
+				USER_HEADER_SEARCH_PATHS = /usr/local/opt/opencv3/include;
 			};
 			name = Release;
 		};

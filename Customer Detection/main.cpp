@@ -328,13 +328,8 @@ encapsulateObjects( Mat* instanceROI, Mat* baseROI, Pick_object METHOD, int KSIZ
         COLOR = paint_lightORANGE;
         bg_illumination = DARK;
     }
-    differs = differs < 60;
     
-//    if (!isObjectPresent(instanceROI, baseROI, bg_illumination))
-//    {
-//        deque<Customer> dev_null;
-//        return dev_null;
-//    }
+    differs = differs < 60;
     
     /**  @fix */
     /** if there is no objects in picture, update baseframe */

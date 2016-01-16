@@ -4,8 +4,6 @@
 #include "/Users/drifter/Dropbox/Feloh/FelohDependencies/FelohDependencies.h"
 #include "/Users/drifter/Documents/opencv-3.0.0/modules/features2d/include/opencv2/features2d.hpp"
 #include "/Users/drifter/Dropbox/Feloh/documents-export-2015-12-01/Software/V1/jacob-ppl-carts/include/opencv2/nonfree/features2d.hpp"
-//#include "opencv2/features2d/features2d.hpp"
-//#include "opencv2/nonfree/features2d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/videoio/videoio.hpp"
