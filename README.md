@@ -3,9 +3,12 @@
 #### Libraries
 
  * OpenCV 3.0: <https://github.com/itseez/opencv>
- * C++ 11
  * Docs: < path_to_documentation > 
 
+#### Compilers
+ 
+ * C++ 11
+ 
 #### Environments
  
  * Xcode 7.2 Beta
